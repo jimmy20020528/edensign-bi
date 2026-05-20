@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Style Atlas — Edensign</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montaga&family=Jost:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#513126;--primary-90:rgba(81,49,38,.9);--primary-50:rgba(81,49,38,.5);
+    --primary-20:rgba(81,49,38,.2);--primary-10:rgba(81,49,38,.1);--primary-05:rgba(81,49,38,.05);
+    --cream:#f5efe6;--cream-soft:#faf6ef;--paper:#ffffff;
+    --amber:#f5a524;--amber-soft:#fef4dd;--orange:#ed722e;
+    --sage:#8aa590;--sage-deep:#5d7a64;--sage-soft:#e8efe9;
+    --fg:#18181b;--fg-muted:#52525b;--fg-subtle:#71717a;--fg-faint:#a1a1aa;
+    --line:#e4e4e7;--line-soft:#f4f4f5;--textfield:#fafafa;
+    --success:#16a34a;--danger:#dc2626;
+    --font-display:'Montaga',Georgia,serif;--font-sans:'Jost','Inter',system-ui,sans-serif;
+    --font-ui:'Inter',system-ui,sans-serif;--font-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+    --shadow-xs:0 1px 2px rgba(0,0,0,.04);--shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --shadow-md:0 4px 12px rgba(81,49,38,.08);--shadow-lg:0 12px 32px rgba(81,49,38,.12);
+  }
+  *{box-sizing:border-box}html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);color:var(--fg);background:var(--cream);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  button{font-family:inherit;cursor:pointer}input,select{font-family:inherit}a{color:inherit;text-decoration:none}
+  .app{min-height:100vh;display:grid;grid-template-columns:240px 1fr;}
+  .sidebar{background:var(--primary);color:#f5efe6;padding:24px 20px;display:flex;flex-direction:column;gap:32px;position:sticky;top:0;height:100vh;}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 6px;}
+  .brand-mark{width:28px;height:28px;border-radius:8px;background:var(--cream);display:grid;place-items:center;color:var(--primary);font-family:var(--font-display);font-size:18px;line-height:1;}
+  .brand-name{font-family:var(--font-display);font-size:20px;color:#fff;letter-spacing:.01em;}
+  .brand-sub{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:rgba(245,239,230,.55);margin-top:2px;}
+  .nav-section{display:flex;flex-direction:column;gap:2px;}
+  .nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:rgba(245,239,230,.5);padding:0 10px;margin-bottom:8px;font-weight:500;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:14px;color:rgba(245,239,230,.78);transition:background .12s,color .12s;}
+  .nav-item:hover{background:rgba(245,239,230,.06);color:#fff}.nav-item.active{background:rgba(245,239,230,.1);color:#fff}
+  .nav-item .icn{width:16px;height:16px;flex:none}
+  .nav-item .pill-new{margin-left:auto;font-size:9px;text-transform:uppercase;letter-spacing:.1em;background:var(--amber);color:var(--primary);padding:2px 6px;border-radius:999px;font-weight:600;}
+  .sidebar-foot{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+  .org-card{border:1px solid rgba(245,239,230,.12);background:rgba(245,239,230,.04);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;}
+  .org-avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--amber),var(--orange));display:grid;place-items:center;color:var(--primary);font-weight:700;font-size:12px;}
+  .org-meta{font-size:12px;line-height:1.3}.org-meta strong{display:block;color:#fff;font-weight:500}.org-meta span{color:rgba(245,239,230,.55)}
+  main{background:var(--cream);min-height:100vh;display:flex;flex-direction:column;}
+  .topbar{height:60px;border-bottom:1px solid var(--line);background:rgba(245,239,230,.6);backdrop-filter:saturate(1.2) blur(6px);display:flex;align-items:center;padding:0 32px;gap:24px;position:sticky;top:0;z-index:20;}
+  .crumbs{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg-muted);}
+  .crumbs strong{color:var(--primary);font-weight:500}.crumbs .sep{color:var(--fg-faint)}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+  .api-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg-muted);font-family:var(--font-mono);}
+  .api-dot{width:8px;height:8px;border-radius:999px;background:var(--success);box-shadow:0 0 0 3px rgba(22,163,74,.15);animation:pulse 2s ease-in-out infinite;}
+  .api-dot.err{background:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,.15);animation:none;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(22,163,74,.15)}50%{box-shadow:0 0 0 6px rgba(22,163,74,.05)}}
+  .api-base-input{height:28px;border:1px solid var(--line);border-radius:6px;padding:0 8px;font-size:11px;font-family:var(--font-mono);color:var(--fg-muted);background:#fff;width:180px;}
+  .api-base-input:focus{outline:none;border-color:var(--primary-20);}
+  .icon-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;color:var(--fg-muted);}
+  .icon-btn:hover{background:var(--cream-soft);color:var(--primary)}
+  .page{padding:28px 32px 64px;max-width:1320px;width:100%;margin:0 auto;}
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px;}
+  .page-title{font-family:var(--font-display);font-size:38px;line-height:1.05;color:var(--primary);margin:0 0 6px;letter-spacing:-.005em;}
+  .page-sub{font-size:15px;color:var(--fg-muted);max-width:560px;line-height:1.5;margin:0;}
+  .head-actions{display:flex;align-items:center;gap:10px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;font-size:14px;font-weight:500;border:1px solid transparent;transition:background .12s,border-color .12s,color .12s,transform .08s;}
+  .btn:active{transform:translateY(1px)}.btn.primary{background:var(--primary);color:#fff}.btn.primary:hover{background:#3f261d}
+  .btn.ghost{background:transparent;border-color:var(--line);color:var(--primary)}.btn.ghost:hover{background:#fff;border-color:var(--primary-20)}
+  .btn.amber{background:var(--amber);color:var(--primary)}.btn.amber:hover{background:#e89a18}
+  .search-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:var(--shadow-sm);margin-bottom:24px;}
+  .search-row{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:14px;align-items:end;}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--fg-subtle);font-weight:500;}
+  .input-wrap{position:relative;display:flex;align-items:center;}
+  .input-wrap .ipre{position:absolute;left:14px;color:var(--fg-faint);pointer-events:none;}
+  .input{width:100%;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--paper);padding:0 16px;font-size:15px;color:var(--fg);transition:border-color .12s,box-shadow .12s;font-family:var(--font-sans);}
+  .input.with-pre{padding-left:42px}
+  .input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-10);}
+  .input.zip{font-family:var(--font-mono);font-size:18px;font-weight:500;letter-spacing:.05em;}
+  .select{height:48px;border-radius:12px;border:1px solid var(--line);background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 14px center;padding:0 38px 0 16px;font-size:15px;color:var(--fg);appearance:none;cursor:pointer;}
+  .submit-btn{height:48px;padding:0 22px;border-radius:12px;background:var(--primary);color:#fff;font-size:15px;font-weight:500;display:inline-flex;align-items:center;gap:10px;border:none;transition:background .12s,transform .08s;}
+  .submit-btn:hover{background:#3f261d}.submit-btn:active{transform:translateY(1px)}.submit-btn:disabled{opacity:.6;cursor:not-allowed}
+  .search-foot{display:flex;align-items:center;gap:18px;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);font-size:12px;color:var(--fg-muted);}
+  .recent{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--fg-muted);font-family:var(--font-mono);font-size:11.5px;background:none;}
+  .recent:hover{border-color:var(--primary-20);color:var(--primary)}
+  .error-banner{background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.2);border-radius:12px;padding:14px 18px;color:var(--danger);font-size:13px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px;}
+  .results-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin:8px 0 16px;}
+  .market-summary{flex:1;min-width:0}
+  .market-eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--orange);font-weight:600;margin-bottom:8px;}
+  .market-eyebrow::before{content:"";width:24px;height:1px;background:currentColor;}
+  .market-title{font-family:var(--font-display);font-size:30px;color:var(--primary);margin:0 0 6px;line-height:1.1;}
+  .market-meta{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--fg-muted);}
+  .market-meta b{color:var(--primary);font-weight:500}.meta-sep{color:var(--fg-faint)}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .kpi{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;}
+  .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--fg-subtle);font-weight:500;}
+  .kpi-value{font-family:var(--font-display);font-size:30px;color:var(--primary);line-height:1;}
+  .kpi-value .unit{font-family:var(--font-sans);font-size:14px;color:var(--fg-muted);margin-left:4px;font-weight:400;}
+  .kpi-delta{font-size:12px;display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-weight:500;}
+  .kpi-delta.up{color:var(--success)}.kpi-delta.down{color:var(--danger)}.kpi-delta.flat{color:var(--fg-muted)}
+  .kpi-spark{position:absolute;right:14px;top:18px;width:64px;height:24px;opacity:.55;}
+  .results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;}
+  .style-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .15s,box-shadow .15s,transform .15s;position:relative;cursor:pointer;}
+  .style-card:hover{border-color:var(--primary-20);box-shadow:var(--shadow-md);transform:translateY(-2px);}
+  .style-card.selected{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-10);}
+  .style-rank{position:absolute;top:14px;left:14px;z-index:2;background:rgba(255,255,255,.95);backdrop-filter:blur(4px);border-radius:999px;padding:5px 10px;font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--primary);letter-spacing:.04em;display:inline-flex;align-items:center;gap:5px;}
+  .style-rank .star{color:var(--amber)}
+  .style-badge{position:absolute;top:14px;right:14px;z-index:2;background:var(--amber);color:var(--primary);padding:4px 9px;border-radius:999px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;}
+  .style-photo{aspect-ratio:4/3;width:100%;display:block;border-bottom:1px solid var(--line);background-size:cover;background-position:center;}
+  .style-body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;}
+  .style-name{font-family:var(--font-display);font-size:22px;color:var(--primary);margin:0;line-height:1.15;}
+  .style-tags{display:flex;flex-wrap:wrap;gap:6px;}
+  .tag{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--cream);color:var(--primary);border:1px solid var(--primary-10);}
+  .score-row{display:flex;align-items:center;gap:10px;margin-top:2px;}
+  .score-bar{flex:1;height:6px;border-radius:999px;background:var(--line-soft);overflow:hidden;position:relative;}
+  .score-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,var(--primary),var(--amber));border-radius:999px;transition:width .9s cubic-bezier(.2,.8,.2,1);}
+  .score-fill.sage{background:linear-gradient(90deg,var(--sage-deep),var(--sage))}.score-fill.muted{background:linear-gradient(90deg,#8a6f64,#c2a99a)}
+  .score-num{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--primary);min-width:40px;text-align:right;}
+  .style-stats{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px dashed var(--line);padding-top:14px;}
+  .stat{display:flex;flex-direction:column;gap:2px}
+  .stat-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--fg-subtle);font-weight:500;}
+  .stat-val{font-family:var(--font-display);font-size:20px;color:var(--primary);line-height:1.1;}
+  .stat-val .delta{font-family:var(--font-mono);font-size:11px;font-weight:500;margin-left:4px;}
+  .delta.up{color:var(--success)}.delta.down{color:var(--danger)}
+  .ai-section{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:32px;}
+  .ai-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px 26px;display:flex;flex-direction:column;gap:18px;}
+  .ai-card.dark{background:var(--primary);color:var(--cream);border-color:var(--primary);}
+  .ai-card.dark .ai-head h3{color:#fff}.ai-card.dark .ai-meta{color:rgba(245,239,230,.6)}
+  .ai-head{display:flex;align-items:center;gap:10px;}
+  .ai-icon{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--amber),var(--orange));display:grid;place-items:center;color:var(--primary);flex:none;}
+  .ai-card.dark .ai-icon{background:rgba(245,165,36,.18);color:var(--amber);}
+  .ai-head h3{font-family:var(--font-display);margin:0;font-size:22px;color:var(--primary);line-height:1.1;}
+  .ai-meta{font-size:11px;color:var(--fg-subtle);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em;}
+  .ai-summary{font-family:var(--font-display);font-size:19px;line-height:1.5;color:#fff;margin:0;text-wrap:pretty;}
+  .ai-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--fg-subtle);font-weight:600;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
+  .ai-section-title .num{width:18px;height:18px;border-radius:5px;background:var(--cream);color:var(--primary);font-family:var(--font-mono);font-weight:600;display:grid;place-items:center;font-size:10px;letter-spacing:0;}
+  .action-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
+  .action-item{display:flex;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--cream-soft);align-items:flex-start;}
+  .action-num{flex:none;width:24px;height:24px;border-radius:7px;background:var(--primary);color:#fff;font-family:var(--font-mono);font-weight:600;display:grid;place-items:center;font-size:11px;margin-top:1px;}
+  .action-item .at{font-size:14px;color:var(--fg);line-height:1.45;}
+  .action-item .at strong{color:var(--primary);font-weight:600}
+  .action-item .at span{display:block;font-size:12px;color:var(--fg-muted);margin-top:2px;}
+  .risk-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
+  .risk-item{display:flex;gap:10px;font-size:13.5px;line-height:1.5;padding:10px 12px;border-radius:10px;background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.12);}
+  .risk-icn{flex:none;color:var(--danger);margin-top:2px;}
+  .risk-item b{color:var(--primary);font-weight:600}
+  .tips-list{display:flex;flex-direction:column;gap:8px;list-style:none;padding:0;margin:0;}
+  .tip-item{display:flex;gap:10px;font-size:13px;line-height:1.5;color:var(--fg);}
+  .tip-bullet{flex:none;width:6px;height:6px;border-radius:999px;background:var(--amber);margin-top:7px;}
+  .tip-item b{color:var(--primary);font-weight:600;margin-right:4px}
+  .style-tabs{display:flex;gap:4px;background:var(--cream);border-radius:10px;padding:4px;margin-bottom:14px;}
+  .style-tab{flex:1;padding:7px 10px;border-radius:7px;font-size:12px;font-weight:500;color:var(--fg-muted);text-align:center;transition:background .12s,color .12s;border:none;background:transparent;cursor:pointer;}
+  .style-tab.active{background:#fff;color:var(--primary);box-shadow:var(--shadow-xs)}
+  .style-tab:hover:not(.active){color:var(--primary)}
+  .factors-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px 26px;}
+  .factors-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;}
+  .factors-head h3{font-family:var(--font-display);margin:0;font-size:22px;color:var(--primary);}
+  .factors-legend{display:flex;gap:14px;font-size:12px;color:var(--fg-muted);}
+  .lg-dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  .lg-dot.boost{background:var(--sage-deep)}.lg-dot.detr{background:#c47b6b}
+  .factors-grid{display:flex;flex-direction:column;gap:8px;}
+  .factor-row{display:grid;grid-template-columns:200px 1fr 80px;align-items:center;gap:14px;font-size:13px;padding:7px 0;}
+  .factor-row .fname{color:var(--primary);font-weight:500;display:flex;align-items:center;gap:8px;}
+  .factor-row .fname .ficn{color:var(--fg-faint);}
+  .factor-bar-wrap{height:18px;position:relative;background:linear-gradient(90deg,rgba(196,123,107,.06) 0%,rgba(196,123,107,.06) 50%,rgba(93,122,100,.06) 50%,rgba(93,122,100,.06) 100%);border-radius:6px;}
+  .factor-bar-wrap::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line);}
+  .factor-bar{position:absolute;top:3px;bottom:3px;border-radius:4px;transition:width .8s cubic-bezier(.2,.8,.2,1),left .8s cubic-bezier(.2,.8,.2,1);}
+  .factor-bar.boost{background:linear-gradient(90deg,var(--sage),var(--sage-deep));left:50%}
+  .factor-bar.detr{background:linear-gradient(270deg,#c47b6b,#a55a47);right:50%}
+  .factor-val{font-family:var(--font-mono);font-weight:600;font-size:13px;text-align:right;}
+  .factor-val.boost{color:var(--sage-deep)}.factor-val.detr{color:#a55a47}
+  .ai-loading-card{background:var(--paper);border:1px dashed var(--primary-20);border-radius:18px;padding:32px;display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--fg-muted);}
+  .spinner{width:28px;height:28px;border:3px solid var(--primary-10);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .page-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:24px;border-top:1px solid var(--line);font-size:12px;color:var(--fg-subtle);font-family:var(--font-mono);}
+  .warning-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:var(--amber-soft);color:#92400e;font-size:11px;font-weight:500;margin-left:8px;}
+  @media (max-width:1100px){.app{grid-template-columns:1fr}.sidebar{display:none}.results-grid{grid-template-columns:1fr 1fr}.ai-section{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.search-row{grid-template-columns:1fr 1fr}}
+  @media (max-width:640px){.results-grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.search-row{grid-template-columns:1fr}.page{padding:20px 16px 40px}.topbar{padding:0 16px}}
+  .lw-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px 26px;margin-bottom:24px;}
+  .lw-form-grid{display:grid;gap:14px;}
+  .lw-row-2{grid-template-columns:1fr 1fr;}
+  .lw-row-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .lw-result-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;}
+  .lw-headline{font-family:var(--font-display);font-size:26px;color:var(--primary);margin:0;line-height:1.2;}
+  .lw-para{font-size:15px;line-height:1.75;color:var(--fg);margin:0 0 16px;}
+  .lw-para:last-of-type{margin-bottom:0;}
+  .lw-contact{font-size:13px;color:var(--fg-muted);margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);}
+  .lw-copy-bar{display:flex;align-items:center;gap:10px;margin-top:18px;}
+  .lw-notes{margin-top:20px;padding:16px 18px;background:var(--cream);border-radius:12px;border:1px solid var(--line-soft);}
+  .lw-notes-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--fg-subtle);font-weight:500;margin-bottom:10px;}
+  .lw-note-item{font-size:13px;color:var(--fg-muted);line-height:1.5;padding:5px 0;border-bottom:1px solid var(--line-soft);display:flex;gap:8px;}
+  .lw-note-item:last-child{border-bottom:none;}
+  .lw-note-dot{flex:none;width:5px;height:5px;border-radius:50%;background:var(--amber);margin-top:8px;}
+  @media (max-width:640px){.lw-row-4{grid-template-columns:1fr 1fr}.lw-row-2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script type="text/babel" data-presets="react">
+const { useState, useMemo, useCallback, useRef } = React;
+
+/* ── Icons ── */
+const Ic = {
+  search:   p=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+  pin:      p=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
+  arrow:    p=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
+  spark:    p=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M9.94 14.06 5 19l5 5 4.94-4.94"/><path d="M14.5 9.5 19 5l-9 9-1 5 5-1z"/><path d="M20 3v4"/><path d="M22 5h-4"/></svg>,
+  layers:   p=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m12.83 2.18-9.66 4.51a1 1 0 0 0 0 1.81l9.66 4.51a1 1 0 0 0 .84 0l9.66-4.51a1 1 0 0 0 0-1.81L13.67 2.18a1 1 0 0 0-.84 0Z"/><path d="m22 12.18-9.16 4.27a1 1 0 0 1-.84 0L2.83 12.18"/><path d="m22 17-9.16 4.27a1 1 0 0 1-.84 0L2.83 17"/></svg>,
+  chart:    p=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 5-5"/></svg>,
+  building: p=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 10h.01"/></svg>,
+  bookmark: p=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>,
+  cog:      p=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  bell:     p=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
+  alert:    p=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  info:     p=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
+  star:     p=><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M12 2 15.09 8.26 22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>,
+};
+
+/* ── Static maps ── */
+const ZIP_META = {
+  "02135":{"city":"Allston","metro":"Boston, MA"},
+  "02116":{"city":"Back Bay","metro":"Boston, MA"},
+  "02118":{"city":"South End","metro":"Boston, MA"},
+  "02446":{"city":"Brookline","metro":"Brookline, MA"},
+  "02139":{"city":"Cambridge","metro":"Cambridge, MA"},
+  "02143":{"city":"Somerville","metro":"Somerville, MA"},
+  "02127":{"city":"South Boston","metro":"Boston, MA"},
+};
+const STYLE_PHOTOS = {
+  "Modern Minimalist": "linear-gradient(135deg,#e8e2d8 0%,#c9bdb0 55%,#b5a898 100%)",
+  "Scandinavian":      "linear-gradient(135deg,#e2ece0 0%,#b8cebc 55%,#9ab8a0 100%)",
+  "Contemporary":      "linear-gradient(135deg,#e0dce8 0%,#b8b0cc 55%,#9e94bb 100%)",
+  "Mid-Century Modern":"linear-gradient(135deg,#eee0d4 0%,#d4bba4 55%,#c0a088 100%)",
+  "Japandi":           "linear-gradient(135deg,#e8e4dc 0%,#c8c0b0 55%,#b0a898 100%)",
+  "Transitional":      "linear-gradient(135deg,#e8e4e0 0%,#c8c4bc 55%,#b4b0a8 100%)",
+  "Industrial":        "linear-gradient(135deg,#e4e0dc 0%,#b8b4ae 55%,#9c9890 100%)",
+  "default":           "linear-gradient(135deg,#e4e0dc 0%,#c0bab4 55%,#a8a19a 100%)",
+};
+const STYLE_TAGS = {
+  "Modern Minimalist": ["Light woods","Neutral palette","Open volumes"],
+  "Scandinavian":      ["Warm minimal","Functional","Pale oak"],
+  "Contemporary":      ["Bold accents","Layered texture","Mid-century cues"],
+  "Mid-Century Modern":["Teak forms","Earth tones","Retro detail"],
+  "Japandi":           ["Wabi-sabi","Natural textures","Low-profile"],
+  "Transitional":      ["Classic-modern blend","Subtle details","Timeless"],
+  "Industrial":        ["Exposed brick","Metal accents","Raw texture"],
+  "default":           ["Staged","Curated","Market-ready"],
+};
+
+const styleToId = n => n.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"");
+
+/* ── API helpers ── */
+async function apiAnalyze(base, params) {
+  const url = new URL("/analyze/by-zipcode", base);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
+  const res = await fetch(url.toString());
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  return data;
+}
+async function apiExplain(base, body) {
+  const res = await fetch(new URL("/analyze/explain/by-zipcode", base).toString(), {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  return data;
+}
+async function apiListingWrite(base, body) {
+  const res = await fetch(new URL("/listing/write", base).toString(), {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  return data;
+}
+
+/* ── Data mapper ── */
+function mapAnalysis(analysis, llm) {
+  const allSt = analysis.all_styles || analysis.recommended_styles || [];
+  const recSt = (analysis.recommended_styles || []).slice(0,3);
+  const doms    = allSt.map(s=>s.median_days_on_market).filter(v=>v!=null).sort((a,b)=>a-b);
+  const ppsfs   = allSt.map(s=>s.median_price_per_sqft).filter(v=>v!=null).sort((a,b)=>a-b);
+  const prems   = allSt.map(s=>s.estimated_psf_premium_pct).filter(v=>v!=null).sort((a,b)=>a-b);
+  const medDom  = doms.length  ? doms[Math.floor(doms.length/2)]   : null;
+  const medPpsf = ppsfs.length ? ppsfs[Math.floor(ppsfs.length/2)] : null;
+  const medPrem = prems.length ? prems[Math.floor(prems.length/2)] : null;
+
+  const styles = recSt.map((s,i) => {
+    const sc = s.hybrid_score ?? s.model_score ?? s.style_score ?? 0;
+    const confScore = typeof s.confidence==="object" ? s.confidence.score : (s.confidence||0);
+    const confWarn  = typeof s.confidence==="object" ? (s.confidence.warnings||[]) : [];
+    const confLabel = confScore>=0.8?"High": confScore>=0.5?"Medium":"Low";
+    const domDiff  = (s.median_days_on_market!=null&&medDom) ? (s.median_days_on_market-medDom)/medDom*100 : null;
+    const ppsfDiff = (s.median_price_per_sqft!=null&&medPpsf) ? (s.median_price_per_sqft-medPpsf)/medPpsf*100 : null;
+    const hasPpsf  = s.median_price_per_sqft != null;
+    const estPrem  = s.estimated_psf_premium_pct;
+    return {
+      id: styleToId(s.style), rank:i+1, name:s.style,
+      photo: STYLE_PHOTOS[s.style]||STYLE_PHOTOS.default,
+      tags: STYLE_TAGS[s.style]||STYLE_TAGS.default,
+      score: Math.round(sc*100),
+      badge: i===0?"Top match":null,
+      warnings: confWarn,
+      stats:{
+        dom:{ val:s.median_days_on_market!=null?String(Math.round(s.median_days_on_market)):"—", unit:"days",
+              delta:domDiff!=null?`${domDiff>0?"+":""}${domDiff.toFixed(1)}%`:"", direction:domDiff!=null&&domDiff<0?"down":"up" },
+        ppsf:{
+          label: hasPpsf ? "Median $/sqft" : "Price premium",
+          val:   hasPpsf ? `$${Math.round(s.median_price_per_sqft)}` : estPrem!=null ? `${estPrem>0?"+":""}${estPrem}%` : "—",
+          delta: ppsfDiff!=null ? `${ppsfDiff>0?"+":""}${ppsfDiff.toFixed(1)}%` : (!hasPpsf&&estPrem!=null ? "vs unstaged" : ""),
+          direction: ppsfDiff!=null&&ppsfDiff>0 ? "up" : ppsfDiff!=null ? "down" : estPrem!=null&&estPrem>0 ? "up" : "down",
+        },
+        sample:s.n_listings, confidence:confLabel,
+      },
+      evidence: s.evidence||null,
+    };
+  });
+
+  const rfPsf = analysis.redfin_market?.median_psf || null;
+  const rfDom = analysis.redfin_market?.median_dom || null;
+  const kpis = [
+    {label:"Median Days on Market", value:rfDom?String(Math.round(rfDom)):medDom?String(Math.round(medDom)):"—", unit:"days", delta:"ZIP avg", trend:"flat"},
+    {label:"Median $/sqft", value:rfPsf?`$${Math.round(rfPsf)}`:medPpsf?`$${Math.round(medPpsf)}`:medPrem!=null?`${medPrem>0?"+":""}${medPrem}%`:"—", delta:"ZIP avg", trend:"flat"},
+    {label:"Data Confidence",       value:(analysis.confidence?.overall||"—").toUpperCase(),     delta:`${analysis.confidence?.style_count||0} styles`, trend:"flat"},
+  ];
+
+  const topEv = styles[0]?.evidence?.top_drivers;
+  const factors = topEv ? [
+    ...(topEv.boosters||[]).map(b=>({name:b.display_name,type:"boost",weight:b.pct/100,note:`${b.pct}% of positive pull`})),
+    ...(topEv.detractors||[]).map(d=>({name:d.display_name,type:"detr",weight:d.pct/100,note:`${d.pct}% of negative pull`})),
+  ] : [];
+
+  let ai = null;
+  if (llm) {
+    const ex = llm.explanation||{};
+    const tipsMap = {};
+    styles.forEach(s=>{
+      const matched = (Array.isArray(ex.style_specific_tips)?ex.style_specific_tips:[]).filter(t=>t.style===s.name);
+      tipsMap[s.id] = matched.flatMap(t=>[
+        t.tip?{title:"Tip",body:t.tip}:null,
+        t.watchout?{title:"Watchout",body:t.watchout}:null,
+      ].filter(Boolean));
+      if (!tipsMap[s.id].length) tipsMap[s.id] = [{title:"Tip",body:`Stage ${s.name} properties with appropriate furniture and lighting.`}];
+    });
+    ai = {
+      model: llm.model||"gpt-4o-mini",
+      summary: ex.executive_summary||"",
+      confidence: ex.confidence_readout||"",
+      benchmark: ex.market_benchmark||"",
+      buyerInsight: ex.buyer_profile_insight||"",
+      actions: (Array.isArray(ex.action_plan)?ex.action_plan:[]).map(a=>({title:a,note:""})),
+      risks:   (Array.isArray(ex.risk_notes)?ex.risk_notes:[]).map(r=>({title:r,detail:""})),
+      tips:    tipsMap,
+    };
+  }
+
+  const meta = ZIP_META[analysis.zipcode]||{city:analysis.city||analysis.zipcode,metro:analysis.state||"US"};
+  return {
+    zip:analysis.zipcode, city:meta.city, metro:meta.metro,
+    inputAddress: analysis.input_address||null,
+    asOf:new Date().toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}),
+    sample:analysis.confidence?.n_listings||0,
+    scoringMode:analysis.scoring_mode||"heuristic",
+    warnings:analysis.warnings||[],
+    kpis, styles, factors, ai,
+    modelMeta:    analysis.model_meta||null,
+    hmdaBuyer:    analysis.hmda_buyer_data||null,
+    redfinMarket: analysis.redfin_market||null,
+    walkScore:    analysis.walk_score_data||null,
+    fredMacro:    analysis.fred_macro||null,
+    schoolProfile:analysis.school_profile||null,
+    dataSource:   analysis.data_source||"unknown",
+    marketCtx:    analysis.market_context||"",
+    weights:      analysis.weights||null,
+  };
+}
+
+/* ── Components ── */
+function Sidebar({page, setPage}) {
+  return (
+    <aside className="sidebar">
+      <div className="brand">
+        <div className="brand-mark">e</div>
+        <div><div className="brand-name">Edensign</div><div className="brand-sub">Style Atlas BI</div></div>
+      </div>
+      <nav className="nav-section">
+        <div className="nav-label">Workspace</div>
+        <a className={`nav-item ${page==="atlas"?"active":""}`} style={{cursor:"pointer"}} onClick={()=>setPage("atlas")}><Ic.search className="icn"/> Style Atlas</a>
+        <a className="nav-item" style={{opacity:.45,cursor:"default"}}><Ic.layers className="icn"/> Style Library</a>
+        <a className="nav-item" style={{opacity:.45,cursor:"default"}}><Ic.chart className="icn"/> Market Trends</a>
+        <a className={`nav-item ${page==="listings"?"active":""}`} style={{cursor:"pointer"}} onClick={()=>setPage("listings")}><Ic.building className="icn"/> Listings</a>
+      </nav>
+      <nav className="nav-section">
+        <div className="nav-label">Account</div>
+        <a className="nav-item" style={{opacity:.45,cursor:"default"}}><Ic.bookmark className="icn"/> Saved ZIPs</a>
+        <a className="nav-item" style={{opacity:.45,cursor:"default"}}><Ic.bell className="icn"/> Alerts</a>
+        <a className="nav-item" style={{opacity:.45,cursor:"default"}}><Ic.cog className="icn"/> Settings</a>
+      </nav>
+      <div className="sidebar-foot">
+        <div className="org-card">
+          <div className="org-avatar">E</div>
+          <div className="org-meta"><strong>Edensign</strong><span>Harvard i-lab</span></div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function Topbar({page, zip, apiBase, setApiBase, apiOk}) {
+  return (
+    <div className="topbar">
+      <div className="crumbs">
+        <span>Workspace</span><span className="sep">/</span>
+        {page==="listings"
+          ? <strong>Listing Script</strong>
+          : <><span>Style Atlas</span><span className="sep">/</span><strong>ZIP {zip||"—"}</strong></>
+        }
+      </div>
+      <div className="topbar-right">
+        <div className="api-status">
+          <span className={`api-dot ${apiOk===false?"err":""}`}/>
+          <input
+            className="api-base-input"
+            value={apiBase}
+            onChange={e=>setApiBase(e.target.value.trim())}
+            placeholder="http://localhost:8000"
+            title="API Base URL"
+          />
+        </div>
+        <button className="icon-btn" title="Notifications"><Ic.bell/></button>
+        <button className="icon-btn" title="Settings"><Ic.cog/></button>
+      </div>
+    </div>
+  );
+}
+
+function SearchPanel({zip,setZip,objective,setObjective,scoringMode,setScoringMode,onSubmit,loading,lastZips,setZipFromRecent}) {
+  const isReady = zip.trim().length >= 5;
+  return (
+    <form className="search-card" onSubmit={e=>{e.preventDefault();onSubmit();}}>
+      <div className="search-row">
+        <div className="field" style={{flex:2}}>
+          <label>ZIP code or address</label>
+          <div className="input-wrap">
+            <Ic.pin className="ipre" width="16" height="16"/>
+            <input className="input zip with-pre" placeholder="02134  or  123 Main St, Boston MA"
+              value={zip} style={{minWidth:220}}
+              onChange={e=>setZip(e.target.value)}/>
+          </div>
+        </div>
+        <div className="field">
+          <label>Objective</label>
+          <select className="select" value={objective} onChange={e=>setObjective(e.target.value)}>
+            <option value="balanced">Balanced</option>
+            <option value="fast">Sell Fast</option>
+            <option value="price">Maximize Price</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>Scoring Mode</label>
+          <select className="select" value={scoringMode} onChange={e=>setScoringMode(e.target.value)}>
+            <option value="hybrid">Hybrid (recommended)</option>
+            <option value="heuristic">Heuristic</option>
+            <option value="model">Model only</option>
+          </select>
+        </div>
+        <button className="submit-btn" disabled={loading||!isReady}>
+          {loading ? <>Analyzing…</> : <>Run Atlas <Ic.arrow/></>}
+        </button>
+      </div>
+      <div className="search-foot">
+        <span style={{display:"inline-flex",alignItems:"center",gap:8}}>
+          <Ic.spark width="14" height="14" style={{color:"var(--orange)"}}/>
+          <b style={{color:"var(--primary)",fontWeight:500}}>Edensign Atlas</b>
+          ZIP-based data-driven staging style recommendation.
+        </span>
+        {lastZips.length>0 && (
+          <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500}}>Recent</span>
+            {lastZips.map(z=>(
+              <button key={z} type="button" className="recent" onClick={()=>setZipFromRecent(z)}>{z}</button>
+            ))}
+          </span>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function KpiStrip({kpis}) {
+  return (
+    <section className="kpis">
+      {kpis.map((k,i)=>(
+        <div className="kpi" key={i}>
+          <div className="kpi-label">{k.label}</div>
+          <div className="kpi-value">{k.value}{k.unit&&<span className="unit">{k.unit}</span>}</div>
+          <div className={`kpi-delta ${k.trend}`}>{k.delta}</div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function StyleCard({s,selected,onSelect}) {
+  return (
+    <article className={`style-card ${selected?"selected":""}`} onClick={()=>onSelect(s.id)}>
+      <div className="style-rank"><Ic.star className="star"/> #{s.rank} · {s.stats.confidence}</div>
+      {s.badge && <div className="style-badge">{s.badge}</div>}
+      <div className="style-photo" style={{background:s.photo}}/>
+      <div className="style-body">
+        <div>
+          <h4 className="style-name">{s.name}</h4>
+          <div className="style-tags" style={{marginTop:6}}>
+            {s.tags.map(t=><span key={t} className="tag">{t}</span>)}
+            {s.warnings.map(w=><span key={w} className="warning-tag"><Ic.alert width="10" height="10"/>{w}</span>)}
+          </div>
+        </div>
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+            <span style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500}}>Match score</span>
+            {s.stats.sample > 0 && <span style={{fontSize:11,color:"var(--fg-muted)",fontFamily:"var(--font-mono)"}}>n = {s.stats.sample}</span>}
+          </div>
+          <div className="score-row">
+            <div className="score-bar">
+              <div className={`score-fill ${s.rank>=3?"muted":s.rank===2?"sage":""}`} style={{width:`${s.score}%`}}/>
+            </div>
+            <div className="score-num">{s.score}</div>
+          </div>
+        </div>
+        <div className="style-stats">
+          <div className="stat">
+            <span className="stat-label">Days on market</span>
+            <span className="stat-val">
+              {s.stats.dom.val}
+              {s.stats.dom.delta && <span className={`delta ${s.stats.dom.direction==="down"?"up":"down"}`}>{s.stats.dom.delta}</span>}
+            </span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">{s.stats.ppsf.label||"Median $/sqft"}</span>
+            <span className="stat-val">
+              {s.stats.ppsf.val}
+              {s.stats.ppsf.delta && <span className={`delta ${s.stats.ppsf.direction==="up"?"up":"down"}`}>{s.stats.ppsf.delta}</span>}
+            </span>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function MarketIntelSection({walkScore,fredMacro,schoolProfile,redfinMarket}) {
+  const hasAny = walkScore||fredMacro||schoolProfile||redfinMarket;
+  if (!hasAny) return null;
+
+  const ScoreBar = ({val,max=100,color="var(--primary)"}) => {
+    const pct = Math.round((val/max)*100);
+    return (
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <div style={{flex:1,height:5,background:"var(--line)",borderRadius:3,overflow:"hidden"}}>
+          <div style={{width:`${pct}%`,height:"100%",background:color,borderRadius:3}}/>
+        </div>
+        <span style={{fontSize:12,fontWeight:600,color:"var(--fg-muted)",minWidth:28,textAlign:"right"}}>{val}</span>
+      </div>
+    );
+  };
+
+  const Card = ({title,children}) => (
+    <div style={{background:"var(--paper)",border:"1px solid var(--line)",borderRadius:14,padding:"14px 18px",flex:"1 1 220px",minWidth:200}}>
+      <div style={{fontSize:10,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500,marginBottom:12}}>{title}</div>
+      {children}
+    </div>
+  );
+
+  const Row = ({label,val,sub}) => (
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
+      <span style={{fontSize:12,color:"var(--fg-muted)"}}>{label}</span>
+      <span style={{fontSize:14,fontWeight:600,color:"var(--primary)"}}>{val}{sub&&<span style={{fontSize:11,fontWeight:400,color:"var(--fg-subtle)",marginLeft:4}}>{sub}</span>}</span>
+    </div>
+  );
+
+  return (
+    <section style={{marginBottom:24}}>
+      <h4 style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500,margin:"0 0 12px"}}>Market Intelligence</h4>
+      <div style={{display:"flex",flexWrap:"wrap",gap:12}}>
+
+        {walkScore && (
+          <Card title="Walkability">
+            <div style={{marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                <span style={{fontSize:12,color:"var(--fg-muted)"}}>Walk</span>
+                <span style={{fontSize:11,color:"var(--fg-subtle)"}}>{walkScore.walk_desc}</span>
+              </div>
+              <ScoreBar val={walkScore.walk_score} color="var(--primary)"/>
+            </div>
+            {walkScore.transit_score!=null && (
+              <div style={{marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span style={{fontSize:12,color:"var(--fg-muted)"}}>Transit</span>
+                  <span style={{fontSize:11,color:"var(--fg-subtle)"}}>{walkScore.transit_desc}</span>
+                </div>
+                <ScoreBar val={walkScore.transit_score} color="#6C63FF"/>
+              </div>
+            )}
+            {walkScore.bike_score!=null && (
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span style={{fontSize:12,color:"var(--fg-muted)"}}>Bike</span>
+                  <span style={{fontSize:11,color:"var(--fg-subtle)"}}>{walkScore.bike_desc}</span>
+                </div>
+                <ScoreBar val={walkScore.bike_score} color="#3CB371"/>
+              </div>
+            )}
+          </Card>
+        )}
+
+        {fredMacro && (
+          <Card title="Macro Economy">
+            {fredMacro.mortgage_rate_30yr!=null && <Row label="30yr Mortgage Rate" val={`${fredMacro.mortgage_rate_30yr}%`}/>}
+            {fredMacro.state_unemployment!=null && <Row label={`${fredMacro.state_code} Unemployment`} val={`${fredMacro.state_unemployment}%`}/>}
+            {fredMacro.case_shiller_index!=null && <Row label="Case-Shiller HPI" val={fredMacro.case_shiller_index} sub="(national)"/>}
+            {fredMacro.housing_starts_k!=null && <Row label="Housing Starts" val={`${fredMacro.housing_starts_k.toLocaleString()}k`} sub="(national)"/>}
+          </Card>
+        )}
+
+        {schoolProfile && (
+          <Card title="Public Schools">
+            <Row label="Schools in ZIP" val={schoolProfile.school_count}/>
+            <Row label="Quality Score" val={`${schoolProfile.quality_score} / 10`}
+              sub={schoolProfile.quality_basis==="frl_rate"?"(FRL-based)":"(est.)"}/>
+            <div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}>
+              {[["Elem",schoolProfile.has_elementary],["Middle",schoolProfile.has_middle_school],["High",schoolProfile.has_high_school]].map(([lbl,has])=>(
+                <span key={lbl} style={{fontSize:11,padding:"2px 8px",borderRadius:20,
+                  background:has?"#e8f5e9":"var(--line)",
+                  color:has?"#2e7d32":"var(--fg-subtle)",fontWeight:500}}>{lbl}</span>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {redfinMarket && (
+          <Card title="Market Activity">
+            {redfinMarket.median_psf!=null && <Row label="Median $/sqft" val={`$${redfinMarket.median_psf}`}/>}
+            {redfinMarket.median_dom!=null && <Row label="Median DOM" val={`${Math.round(redfinMarket.median_dom)} days`}/>}
+            {redfinMarket.homes_sold!=null && <Row label="Homes Sold" val={redfinMarket.homes_sold} sub="last period"/>}
+          </Card>
+        )}
+
+      </div>
+    </section>
+  );
+}
+
+function AISection({ai,aiLoading,activeStyle,setActiveStyle,styles,hmdaBuyer}) {
+  if (!ai || !ai.summary) return null;
+  const archetypeLabel = {
+    "Gen Z":"Gen Z","Younger Millennial":"Younger Millennial",
+    "Older Millennial":"Older Millennial","Gen X":"Gen X",
+    "Boomer":"Boomer","Silent Generation":"Silent Generation","Mixed":"Mixed"
+  };
+  return (
+    <section className="ai-section">
+      {hmdaBuyer && (
+        <div style={{background:"var(--paper)",border:"1px solid var(--line)",borderRadius:14,padding:"16px 20px",marginBottom:16,display:"flex",flexWrap:"wrap",gap:20,alignItems:"center"}}>
+          <div style={{flex:"none"}}>
+            <div style={{fontSize:10,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500,marginBottom:4}}>Buyer Profile</div>
+            <div style={{fontSize:11,color:"var(--fg-faint)",fontFamily:"var(--font-mono)"}}>HMDA 2024 · county {hmdaBuyer.county_fips}</div>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:20,flex:1}}>
+            {[
+              {label:"Archetype",  val: archetypeLabel[hmdaBuyer.buyer_archetype]||hmdaBuyer.buyer_archetype},
+              {label:"Age (dominant)", val: hmdaBuyer.dominant_age_group},
+              {label:"Under 45",   val: `${hmdaBuyer.pct_age_under_45}%`},
+              {label:"Median Income", val: `$${hmdaBuyer.median_income_k}k`},
+              {label:"Median Loan",   val: `$${hmdaBuyer.median_loan_k}k`},
+              {label:"Purchases",     val: hmdaBuyer.n_purchases.toLocaleString()},
+            ].map(({label,val})=>(
+              <div key={label}>
+                <div style={{fontSize:10,textTransform:"uppercase",letterSpacing:".1em",color:"var(--fg-subtle)",fontWeight:500}}>{label}</div>
+                <div style={{fontSize:15,fontWeight:600,color:"var(--primary)",marginTop:2}}>{val}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="ai-card dark">
+        <div className="ai-head">
+          <div className="ai-icon"><Ic.spark/></div>
+          <div>
+            <h3>Executive summary</h3>
+            <div className="ai-meta">{ai.model} · edensign-atlas</div>
+          </div>
+        </div>
+        <p className="ai-summary">{ai.summary}</p>
+        {ai.buyerInsight && (
+          <p style={{fontSize:13,color:"rgba(245,239,230,.8)",margin:"10px 0 0",lineHeight:1.5,borderLeft:"2px solid var(--amber)",paddingLeft:10}}>{ai.buyerInsight}</p>
+        )}
+        {ai.benchmark && (
+          <p style={{fontSize:12,color:"rgba(245,239,230,.55)",margin:"8px 0 0",fontFamily:"var(--font-mono)",letterSpacing:".01em"}}>
+            <span style={{color:"var(--amber)",marginRight:6}}>⊙</span>{ai.benchmark}
+          </p>
+        )}
+        {ai.confidence && (
+          <p style={{fontSize:13,color:"rgba(245,239,230,.7)",margin:"8px 0 0",fontStyle:"italic"}}>{ai.confidence}</p>
+        )}
+        {ai.actions.length>0 && (
+          <div>
+            <h5 className="ai-section-title" style={{color:"rgba(245,239,230,.6)"}}>
+              <span className="num" style={{background:"rgba(245,239,230,.12)",color:"#fff"}}>1</span>
+              Action plan
+            </h5>
+            <ul className="action-list">
+              {ai.actions.map((a,i)=>(
+                <li key={i} className="action-item" style={{background:"rgba(245,239,230,.04)",border:"1px solid rgba(245,239,230,.1)"}}>
+                  <div className="action-num" style={{background:"var(--amber)",color:"var(--primary)"}}>{i+1}</div>
+                  <div className="at" style={{color:"#fff"}}>
+                    <strong style={{color:"#fff"}}>{a.title}</strong>
+                    {a.note && <span style={{color:"rgba(245,239,230,.6)"}}>{a.note}</span>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+      <div className="ai-card">
+        {ai.risks.length>0 && (
+          <div>
+            <h5 className="ai-section-title"><span className="num">2</span>Risk notes</h5>
+            <ul className="risk-list">
+              {ai.risks.map((r,i)=>(
+                <li key={i} className="risk-item">
+                  <Ic.alert className="risk-icn"/>
+                  <div><b>{r.title}</b>{r.detail?" "+r.detail:""}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div>
+          <h5 className="ai-section-title"><span className="num">3</span>Style-specific tips</h5>
+          <div className="style-tabs">
+            {styles.map(s=>(
+              <button key={s.id} type="button" className={`style-tab ${activeStyle===s.id?"active":""}`}
+                onClick={()=>setActiveStyle(s.id)}>{s.name}</button>
+            ))}
+          </div>
+          <ul className="tips-list">
+            {(ai.tips[activeStyle]||[]).map((t,i)=>(
+              <li className="tip-item" key={i}>
+                <span className="tip-bullet"/>
+                <div><b>{t.title}.</b> {t.body}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FactorsChart({factors}) {
+  const maxW = useMemo(()=>Math.max(...factors.map(f=>f.weight),0.01),[factors]);
+  const sorted = useMemo(()=>{
+    const b=factors.filter(f=>f.type==="boost").sort((a,c)=>c.weight-a.weight);
+    const d=factors.filter(f=>f.type==="detr").sort((a,c)=>c.weight-a.weight);
+    return [...b,...d];
+  },[factors]);
+  if (!sorted.length) return null;
+  return (
+    <section className="factors-card">
+      <div className="factors-head">
+        <div>
+          <h3>Boosters & detractors</h3>
+          <div style={{fontSize:12,color:"var(--fg-muted)",marginTop:4}}>What's pulling the top recommendation up — and what's holding it back.</div>
+        </div>
+        <div className="factors-legend">
+          <span><span className="lg-dot boost"/>Booster</span>
+          <span><span className="lg-dot detr"/>Detractor</span>
+        </div>
+      </div>
+      <div className="factors-grid">
+        {sorted.map((f,i)=>{
+          const pct=(f.weight/maxW)*50;
+          return (
+            <div className="factor-row" key={i}>
+              <div className="fname"><Ic.info className="ficn"/>{f.name}
+                <span style={{fontSize:11,color:"var(--fg-faint)",fontWeight:400,marginLeft:4}}>· {f.note}</span>
+              </div>
+              <div className="factor-bar-wrap">
+                <div className={`factor-bar ${f.type}`}
+                  style={f.type==="boost"?{left:"50%",width:`${pct}%`}:{right:"50%",width:`${pct}%`}}/>
+              </div>
+              <div className={`factor-val ${f.type}`}>{f.type==="boost"?"+":"−"}{(f.weight*100).toFixed(0)}%</div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ── Listing Writer Page ── */
+const VALID_STYLES = ["Transitional","Contemporary","Modern Minimalist","Scandinavian","Bohemian","Industrial","Coastal","Coastal Modern","Farmhouse","Traditional"];
+const PROPERTY_TYPES = ["condo","apartment","townhouse","house","single_family","loft","multi_family"];
+
+function Field({label, children}) {
+  return <div className="field">{label && <label>{label}</label>}{children}</div>;
+}
+
+function ListingsPage({apiBase}) {
+  const [form, setForm] = React.useState({
+    style:"Transitional", street_address:"", bedrooms:"", bathrooms:"", sqft:"",
+    property_type:"condo", agent_name:"", agent_contact:"", additional_requirements:"",
+  });
+  const [images,    setImages]   = React.useState([]);
+  const [loading, setLoading]   = React.useState(false);
+  const [result,  setResult]    = React.useState(null);
+  const [error,   setError]     = React.useState(null);
+  const [showNotes, setShowNotes] = React.useState(false);
+  const [copied,  setCopied]    = React.useState(false);
+
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  function resizeAndEncode(file) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1536;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else       { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.85));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handleImageFiles(files) {
+    const toAdd = Array.from(files).slice(0, 10 - images.length);
+    toAdd.forEach(async file => {
+      const dataUrl = await resizeAndEncode(file);
+      setImages(prev => [...prev, {dataUrl, name: file.name}]);
+    });
+  }
+
+  function removeImage(idx) {
+    setImages(prev => prev.filter((_,i) => i !== idx));
+  }
+
+  const isReady = form.street_address.trim() && form.bedrooms && form.bathrooms &&
+    form.sqft && form.agent_name.trim() && form.agent_contact.trim();
+
+  async function generate(e) {
+    e.preventDefault();
+    if (!isReady) return;
+    setLoading(true); setError(null); setResult(null); setCopied(false);
+    try {
+      const addr = form.street_address.trim();
+      const body = {
+        style: form.style,
+        street_address: addr,
+        bedrooms: parseInt(form.bedrooms),
+        bathrooms: parseFloat(form.bathrooms),
+        sqft: parseInt(form.sqft),
+        property_type: form.property_type,
+        agent_name: form.agent_name.trim(),
+        agent_contact: form.agent_contact.trim(),
+        address: addr,
+      };
+      if (form.additional_requirements.trim()) body.additional_requirements = form.additional_requirements.trim();
+      if (images.length > 0) body.images = images.map(i => i.dataUrl);
+      const data = await apiListingWrite(apiBase, body);
+      setResult(data);
+    } catch(err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function copyText() {
+    if (!result) return;
+    navigator.clipboard.writeText(result.full_body).then(()=>{
+      setCopied(true);
+      setTimeout(()=>setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div className="page">
+      <header className="page-head">
+        <div>
+          <h1 className="page-title">Listing Script</h1>
+          <p className="page-sub">Generate a polished listing script from your staged property. Select a style and fill in the property details.</p>
+        </div>
+      </header>
+
+      <form onSubmit={generate}>
+        <div className="lw-card">
+          <div style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500,marginBottom:16}}>Property Details</div>
+
+          <div className="lw-form-grid">
+            <Field label="Street Address">
+              <input className="input" placeholder="123 Main Street, Boston, MA 02134"
+                value={form.street_address} onChange={e=>set("street_address",e.target.value)} required/>
+            </Field>
+
+            <div className={`lw-form-grid lw-row-4`}>
+              <Field label="Bedrooms">
+                <input className="input" type="number" min="0" max="20" placeholder="2"
+                  value={form.bedrooms} onChange={e=>set("bedrooms",e.target.value)} required/>
+              </Field>
+              <Field label="Bathrooms">
+                <input className="input" type="number" min="1" max="20" step="0.5" placeholder="1"
+                  value={form.bathrooms} onChange={e=>set("bathrooms",e.target.value)} required/>
+              </Field>
+              <Field label="Sq Ft">
+                <input className="input" type="number" min="100" placeholder="850"
+                  value={form.sqft} onChange={e=>set("sqft",e.target.value)} required/>
+              </Field>
+              <Field label="Property Type">
+                <select className="select" value={form.property_type} onChange={e=>set("property_type",e.target.value)}>
+                  {PROPERTY_TYPES.map(t=><option key={t} value={t}>{t.replace("_"," ")}</option>)}
+                </select>
+              </Field>
+            </div>
+          </div>
+        </div>
+
+        <div className="lw-card">
+          <div style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500,marginBottom:16}}>Staging Style</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {VALID_STYLES.map(s=>(
+              <button key={s} type="button"
+                onClick={()=>set("style",s)}
+                style={{
+                  padding:"7px 14px",borderRadius:999,fontSize:13,fontWeight:500,cursor:"pointer",
+                  border: form.style===s ? "2px solid var(--primary)" : "1px solid var(--line)",
+                  background: form.style===s ? "var(--primary)" : "var(--paper)",
+                  color: form.style===s ? "#fff" : "var(--fg-muted)",
+                  transition:"all .12s",
+                }}>{s}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="lw-card">
+          <div style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500,marginBottom:4}}>Property Photos</div>
+          <div style={{fontSize:12,color:"var(--fg-subtle)",marginBottom:14}}>Optional. Upload staged photos and the script will describe what it actually sees.</div>
+          <label style={{
+            display:"flex",alignItems:"center",gap:10,padding:"11px 16px",
+            border:"1.5px dashed var(--line)",borderRadius:10,cursor:"pointer",
+            fontSize:13,color:"var(--fg-muted)",width:"fit-content",
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            {images.length===0 ? "Upload photos" : `Add more (${images.length}/10)`}
+            <input type="file" accept="image/*" multiple style={{display:"none"}}
+              onChange={e=>{ handleImageFiles(e.target.files); e.target.value=""; }}/>
+          </label>
+          {images.length > 0 && (
+            <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:14}}>
+              {images.map((img,i)=>(
+                <div key={i} style={{position:"relative",width:80,height:80}}>
+                  <img src={img.dataUrl} style={{width:80,height:80,objectFit:"cover",borderRadius:8,border:"1px solid var(--line)"}}/>
+                  <button type="button" onClick={()=>removeImage(i)}
+                    style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:"50%",
+                      background:"var(--fg)",color:"var(--paper)",border:"none",cursor:"pointer",
+                      fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="lw-card">
+          <div style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500,marginBottom:16}}>Agent Info</div>
+          <div className={`lw-form-grid lw-row-2`}>
+            <Field label="Your Name">
+              <input className="input" placeholder="Sarah Chen"
+                value={form.agent_name} onChange={e=>set("agent_name",e.target.value)} required/>
+            </Field>
+            <Field label="Your Contact">
+              <input className="input" placeholder="617-555-0182 or email"
+                value={form.agent_contact} onChange={e=>set("agent_contact",e.target.value)} required/>
+            </Field>
+          </div>
+          <div style={{marginTop:14}}>
+            <Field label="Additional Requirements (optional)">
+              <input className="input" placeholder="e.g. highlight the private rooftop terrace"
+                value={form.additional_requirements} onChange={e=>set("additional_requirements",e.target.value)}/>
+            </Field>
+          </div>
+        </div>
+
+        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:24}}>
+          <button className="submit-btn" disabled={loading||!isReady}>
+            {loading ? <>Generating…</> : <>Generate Listing <Ic.arrow/></>}
+          </button>
+        </div>
+      </form>
+
+      {error && (
+        <div className="error-banner">
+          <Ic.alert style={{flex:"none",marginTop:1}}/>
+          <span><b>Error:</b> {error}</span>
+        </div>
+      )}
+
+      {result && (
+        <div className="lw-card">
+          <div className="lw-result-head">
+            <div>
+              <div style={{fontSize:10,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500,marginBottom:8}}>{result.style} staging</div>
+              <h2 className="lw-headline">{result.headline}</h2>
+            </div>
+            <div style={{display:"flex",gap:8,flexShrink:0}}>
+              <button type="button" className="btn ghost" style={{fontSize:12,padding:"6px 14px"}}
+                onClick={()=>setShowNotes(v=>!v)}>
+                {showNotes ? "Hide" : "Show"} staging notes
+              </button>
+            </div>
+          </div>
+
+          <div>
+            {result.paragraphs.slice(0,-1).map((p,i)=>(
+              <p key={i} className="lw-para">{p}</p>
+            ))}
+            <p className="lw-contact">{result.paragraphs[result.paragraphs.length-1]}</p>
+          </div>
+
+          <div className="lw-copy-bar">
+            <button type="button" className="btn primary" style={{fontSize:13}} onClick={copyText}>
+              {copied ? "Copied!" : "Copy listing"}
+            </button>
+          </div>
+
+          {showNotes && (
+            <div className="lw-notes">
+              <div className="lw-notes-title">Staging Notes</div>
+              {result.staging_notes.map((n,i)=>(
+                <div key={i} className="lw-note-item">
+                  <span className="lw-note-dot"/>
+                  <span>{n}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── App ── */
+function App() {
+  const [page,      setPage]      = useState("atlas");
+  const [apiBase,   setApiBase]   = useState(window.location.origin==="null"?"http://localhost:8000":window.location.origin);
+  const [zip,       setZip]       = useState("");
+  const [objective, setObjective] = useState("balanced");
+  const [scoringMode,setScoringMode]=useState("hybrid");
+  const [loading,   setLoading]   = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [data,      setData]      = useState(null);
+  const [error,     setError]     = useState(null);
+  const [apiOk,     setApiOk]     = useState(null);
+  const [activeStyleId, setActiveStyleId] = useState("");
+  const [selectedCard,  setSelectedCard]  = useState("");
+  const [lastZips, setLastZips] = useState([]);
+  const reqId = useRef(0);
+
+  // Determine if input is a ZIP (5 digits) or address
+  const isZipMode = /^\d{5}$/.test(zip.trim());
+  const apiParams = isZipMode
+    ? {zipcode: zip.trim(), objective, scoring_mode: scoringMode}
+    : {address: zip.trim(),  objective, scoring_mode: scoringMode};
+
+  const runAtlas = useCallback(async () => {
+    if (zip.trim().length < 5) return;
+    const myId = ++reqId.current;
+    setLoading(true); setError(null); setData(null); setAiLoading(false);
+    const params = /^\d{5}$/.test(zip.trim())
+      ? {zipcode: zip.trim(), objective, scoring_mode: scoringMode}
+      : {address: zip.trim(),  objective, scoring_mode: scoringMode};
+    try {
+      const analysis = await apiAnalyze(apiBase, params);
+      if (myId !== reqId.current) return;
+      setApiOk(true);
+      const mapped = mapAnalysis(analysis, null);
+      setData(mapped);
+      setActiveStyleId(mapped.styles[0]?.id||"");
+      setSelectedCard(mapped.styles[0]?.id||"");
+      setLastZips(prev=>[zip.trim(),...prev.filter(z=>z!==zip.trim())].slice(0,4));
+      setLoading(false);
+
+      setAiLoading(true);
+      let explainAttempt = 0;
+      while (explainAttempt < 2) {
+        try {
+          const explResult = await apiExplain(apiBase, {
+            ...params,
+            client_context:{language:"English",audience:"homeowner_or_staging_team"},
+            precomputed_analysis:analysis,
+          });
+          if (myId !== reqId.current) return;
+          setData(mapAnalysis(analysis, explResult.llm));
+          break;
+        } catch(aiErr) {
+          explainAttempt++;
+          console.error(`AI explanation attempt ${explainAttempt} failed:`, aiErr.message);
+          if (explainAttempt >= 2 || myId !== reqId.current) break;
+        }
+      }
+      if (myId === reqId.current) setAiLoading(false);
+    } catch(err) {
+      if (myId !== reqId.current) return;
+      setApiOk(false);
+      setError(err.message);
+      setLoading(false);
+    }
+  }, [apiBase, zip, objective, scoringMode]);
+
+  const setZipFromRecent = useCallback(z => { setZip(z); }, []);
+
+  const onSelectCard = useCallback(id => {
+    setSelectedCard(id);
+    setActiveStyleId(id);
+    document.querySelector("#ai-section")?.scrollIntoView?.({behavior:"smooth",block:"start"});
+  }, []);
+
+  return (
+    <div className="app">
+      <Sidebar page={page} setPage={setPage}/>
+      <main>
+        <Topbar page={page} zip={data?.zip||zip} apiBase={apiBase} setApiBase={setApiBase} apiOk={apiOk}/>
+        {page==="listings" && <ListingsPage apiBase={apiBase}/>}
+        {page==="atlas" && <div className="page">
+          <header className="page-head">
+            <div>
+              <h1 className="page-title">Style Atlas</h1>
+              <p className="page-sub">Find the staging styles that move listings fastest in your market — backed by real MLS sold data and AI explanation.</p>
+            </div>
+          </header>
+
+          <SearchPanel
+            zip={zip} setZip={setZip}
+            objective={objective} setObjective={setObjective}
+            scoringMode={scoringMode} setScoringMode={setScoringMode}
+            onSubmit={runAtlas} loading={loading}
+            lastZips={lastZips} setZipFromRecent={setZipFromRecent}
+          />
+
+          {error && (
+            <div className="error-banner">
+              <Ic.alert style={{flex:"none",marginTop:1}}/>
+              <span><b>Request failed:</b> {error}. Check that the API server is running at <code>{apiBase}</code>.</span>
+            </div>
+          )}
+
+          {data && (
+            <>
+              <div className="results-head">
+                <div className="market-summary">
+                  <div className="market-eyebrow">Market snapshot</div>
+                  <h2 className="market-title">{data.city}, {data.metro} · {data.zip}</h2>
+                  {data.inputAddress && (
+                    <div style={{fontSize:11,color:"var(--fg-subtle)",fontFamily:"var(--font-mono)",marginTop:2}}>
+                      ↳ {data.inputAddress}
+                    </div>
+                  )}
+                  <div className="market-meta">
+                    <span>Mode <b>{data.scoringMode}</b></span>
+                    <span className="meta-sep">·</span>
+                    <span>As of <b>{data.asOf}</b></span>
+                    {data.warnings.length>0 && (
+                      <span className="meta-sep">·</span>
+                    )}
+                    {data.warnings.map(w=>(
+                      <span key={w} className="warning-tag"><Ic.alert width="10" height="10"/>{w}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <KpiStrip kpis={data.kpis}/>
+
+              <section className="results-grid">
+                {data.styles.map(s=>(
+                  <StyleCard key={s.id} s={s} selected={selectedCard===s.id} onSelect={onSelectCard}/>
+                ))}
+              </section>
+
+              <MarketIntelSection
+                walkScore={data.walkScore}
+                fredMacro={data.fredMacro}
+                schoolProfile={data.schoolProfile}
+                redfinMarket={data.redfinMarket}
+              />
+
+              {aiLoading && (
+                <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 0",color:"var(--fg-muted)",fontSize:13,fontFamily:"var(--font-mono)"}}>
+                  <div className="spinner" style={{width:16,height:16,borderWidth:2}}/>
+                  Generating AI explanation…
+                </div>
+              )}
+
+              <div id="ai-section">
+                <AISection
+                  ai={data.ai} aiLoading={aiLoading}
+                  activeStyle={activeStyleId} setActiveStyle={setActiveStyleId}
+                  styles={data.styles}
+                  hmdaBuyer={data.hmdaBuyer}
+                />
+              </div>
+
+              {data.factors.length>0 && <FactorsChart factors={data.factors}/>}
+
+              <footer className="page-foot">
+                <span>Edensign Atlas · {data.asOf} · {data.scoringMode} mode</span>
+                {data.modelMeta && (
+                  <span style={{fontFamily:"var(--font-mono)",fontSize:11}}>
+                    psf: {data.modelMeta.log_psf_artifact?.split("/").pop()} ·
+                    dom: {data.modelMeta.log_dom_artifact?.split("/").pop()}
+                  </span>
+                )}
+              </footer>
+            </>
+          )}
+
+          {!data && !loading && !error && (
+            <div style={{textAlign:"center",padding:"60px 0",color:"var(--fg-subtle)"}}>
+              <Ic.search width="40" height="40" style={{marginBottom:12,opacity:.3}}/>
+              <p style={{fontSize:15,margin:0}}>Enter a ZIP code above and click <b>Run Atlas</b> to see style recommendations.</p>
+            </div>
+          )}
+        </div>}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

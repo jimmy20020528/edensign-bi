@@ -1,0 +1,187 @@
+{
+  "// 说明": "US Census ACS 5-Year API 变量映射表",
+  "// 文档": "https://api.census.gov/data/2023/acs/acs5/variables.html",
+  "// 格式": "ACS变量代码 → 我们数据库里的字段名",
+
+  "variables": {
+    "B19013_001E": {
+      "field": "median_income",
+      "label": "Median household income (dollars)",
+      "label_cn": "中位家庭年收入",
+      "factor_num": 22,
+      "unit": "USD/year"
+    },
+    "B01002_001E": {
+      "field": "median_age",
+      "label": "Median age",
+      "label_cn": "中位年龄",
+      "factor_num": 23,
+      "unit": "years"
+    },
+    "B11003_003E": {
+      "field": "_married_with_children",
+      "label": "Married-couple family with children under 18",
+      "label_cn": "有未成年子女的已婚家庭数",
+      "factor_num": 24,
+      "unit": "count",
+      "note": "需要除以总家庭数算百分比"
+    },
+    "B11001_001E": {
+      "field": "_total_households",
+      "label": "Total households",
+      "label_cn": "总家庭数",
+      "unit": "count",
+      "note": "用作分母计算各种百分比"
+    },
+    "B25003_001E": {
+      "field": "_total_occupied",
+      "label": "Total occupied housing units",
+      "label_cn": "总占用住房单元",
+      "unit": "count"
+    },
+    "B25003_002E": {
+      "field": "_owner_occupied",
+      "label": "Owner-occupied housing units",
+      "label_cn": "自住住房单元数",
+      "factor_num": 25,
+      "unit": "count",
+      "note": "除以 _total_occupied 得 pct_owner_occupied"
+    },
+    "B15003_022E": {
+      "field": "_bachelors",
+      "label": "Bachelor's degree",
+      "label_cn": "学士学位人数",
+      "factor_num": 26,
+      "unit": "count",
+      "note": "加上masters+professional+doctorate除以25岁+总人口"
+    },
+    "B15003_023E": {
+      "field": "_masters",
+      "label": "Master's degree",
+      "label_cn": "硕士学位人数",
+      "unit": "count"
+    },
+    "B15003_024E": {
+      "field": "_professional",
+      "label": "Professional school degree",
+      "label_cn": "专业学位人数",
+      "unit": "count"
+    },
+    "B15003_025E": {
+      "field": "_doctorate",
+      "label": "Doctorate degree",
+      "label_cn": "博士学位人数",
+      "unit": "count"
+    },
+    "B15003_001E": {
+      "field": "_pop_25_plus",
+      "label": "Population 25 years and over",
+      "label_cn": "25岁以上总人口",
+      "unit": "count",
+      "note": "教育程度的分母"
+    },
+    "B02001_002E": {
+      "field": "_white_alone",
+      "label": "White alone",
+      "label_cn": "白人数量",
+      "factor_num": "27a",
+      "unit": "count"
+    },
+    "B02001_003E": {
+      "field": "_black_alone",
+      "label": "Black or African American alone",
+      "label_cn": "黑人数量",
+      "factor_num": "27b",
+      "unit": "count"
+    },
+    "B02001_005E": {
+      "field": "_asian_alone",
+      "label": "Asian alone",
+      "label_cn": "亚裔数量",
+      "factor_num": "27c",
+      "unit": "count"
+    },
+    "B03001_003E": {
+      "field": "_hispanic",
+      "label": "Hispanic or Latino",
+      "label_cn": "西班牙裔数量",
+      "factor_num": "27d",
+      "unit": "count"
+    },
+    "B01003_001E": {
+      "field": "total_population",
+      "label": "Total population",
+      "label_cn": "总人口",
+      "factor_num": 28,
+      "unit": "count",
+      "note": "也是种族百分比的分母"
+    },
+    "B25010_001E": {
+      "field": "avg_household_size",
+      "label": "Average household size",
+      "label_cn": "平均户均人口",
+      "factor_num": 29,
+      "unit": "persons"
+    },
+    "B25077_001E": {
+      "field": "median_home_value",
+      "label": "Median value of owner-occupied housing units",
+      "label_cn": "中位房屋价值",
+      "factor_num": 30,
+      "unit": "USD"
+    },
+    "B08301_001E": {
+      "field": "_commute_total",
+      "label": "Total workers 16+ commuting",
+      "label_cn": "通勤总人数",
+      "unit": "count"
+    },
+    "B08301_010E": {
+      "field": "_commute_transit",
+      "label": "Public transportation commuters",
+      "label_cn": "公共交通通勤人数",
+      "factor_num": "31a",
+      "unit": "count"
+    },
+    "B08301_018E": {
+      "field": "_commute_bike",
+      "label": "Bicycle commuters",
+      "label_cn": "骑车通勤人数",
+      "factor_num": "31b",
+      "unit": "count"
+    },
+    "B08301_019E": {
+      "field": "_commute_walk",
+      "label": "Walked commuters",
+      "label_cn": "步行通勤人数",
+      "factor_num": "31b",
+      "unit": "count"
+    },
+    "B16001_001E": {
+      "field": "_language_total",
+      "label": "Population 5 years and over",
+      "label_cn": "5岁以上总人口",
+      "unit": "count"
+    },
+    "B16001_002E": {
+      "field": "_english_only",
+      "label": "Speak only English",
+      "label_cn": "只说英语人数",
+      "factor_num": 32,
+      "unit": "count"
+    },
+    "B25064_001E": {
+      "field": "median_rent",
+      "label": "Median gross rent",
+      "label_cn": "中位月租金",
+      "factor_num": 33,
+      "unit": "USD/month"
+    }
+  },
+
+  "// Allston配置": "Suffolk County = 025, Massachusetts = 25",
+  "state_fips": "25",
+  "county_fips": "025",
+  "dataset": "acs/acs5",
+  "year": 2023
+}

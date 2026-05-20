@@ -1,0 +1,39 @@
+# ══════════════════════════════════════════════
+# Edensign BI — Docker Compose
+# 启动: docker compose up -d
+# 停止: docker compose down
+# 清除数据重来: docker compose down -v
+# ══════════════════════════════════════════════
+
+services:
+  # ── PostgreSQL + PostGIS ──
+  # PostGIS 是 PostgreSQL 的地理空间扩展
+  # 让数据库能存经纬度、做半径查询、算距离
+  db:
+    image: postgis/postgis:16-3.4      # PostgreSQL 16 + PostGIS 3.4
+    container_name: edensign_bi_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: edensign_bi         # 数据库名
+      POSTGRES_USER: edensign          # 用户名
+      POSTGRES_PASSWORD: edensign_dev  # 开发环境密码
+    ports:
+      - "5432:5432"                    # 映射到本机5432端口
+    volumes:
+      - pgdata:/var/lib/postgresql/data          # 数据持久化
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql  # 自动建表
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edensign"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (Week 4 才需要, 给Celery用) ──
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: edensign_bi_redis
+  #   ports:
+  #     - "6379:6379"
+
+volumes:
+  pgdata:                              # Docker管理的持久化存储

@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Listing Wizard — Edensign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montaga&family=Jost:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#513126;--primary-90:rgba(81,49,38,.9);--primary-50:rgba(81,49,38,.5);
+    --primary-20:rgba(81,49,38,.2);--primary-10:rgba(81,49,38,.1);--primary-05:rgba(81,49,38,.05);
+    --cream:#f5efe6;--cream-soft:#faf6ef;--paper:#ffffff;
+    --amber:#f5a524;--amber-soft:#fef4dd;--orange:#ed722e;
+    --sage:#8aa590;--sage-deep:#5d7a64;--sage-soft:#e8efe9;
+    --fg:#18181b;--fg-muted:#52525b;--fg-subtle:#71717a;--fg-faint:#a1a1aa;
+    --line:#e4e4e7;--line-soft:#f4f4f5;
+    --success:#16a34a;--danger:#dc2626;
+    --font-display:'Montaga',Georgia,serif;--font-sans:'Jost','Inter',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+    --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --shadow-md:0 4px 12px rgba(81,49,38,.08);
+  }
+  *{box-sizing:border-box}html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);color:var(--fg);background:var(--cream);-webkit-font-smoothing:antialiased;}
+  button{font-family:inherit;cursor:pointer}input{font-family:inherit}
+
+  /* Layout */
+  .page{max-width:960px;margin:0 auto;padding:40px 32px 80px;}
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:36px;height:36px;border-radius:10px;background:var(--primary);display:grid;place-items:center;color:var(--cream);font-family:var(--font-display);font-size:20px;line-height:1;}
+  .brand-name{font-family:var(--font-display);font-size:24px;color:var(--primary);}
+  .brand-sub{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--fg-subtle);margin-top:2px;}
+  .nav-back{font-size:13px;color:var(--fg-muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+  .nav-back:hover{color:var(--primary);}
+
+  /* Hero */
+  .hero{margin-bottom:32px;}
+  .hero-title{font-family:var(--font-display);font-size:42px;line-height:1.05;color:var(--primary);margin:0 0 8px;letter-spacing:-.005em;}
+  .hero-sub{font-size:16px;color:var(--fg-muted);max-width:600px;line-height:1.55;margin:0;}
+
+  /* Card */
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:var(--shadow-sm);margin-bottom:20px;}
+
+  /* Upload zone */
+  .upload-zone{border:2px dashed var(--line);border-radius:14px;padding:48px 24px;text-align:center;transition:border-color .15s, background .15s;cursor:pointer;background:var(--cream-soft);}
+  .upload-zone:hover, .upload-zone.dragover{border-color:var(--primary);background:var(--paper);}
+  .upload-icon{width:48px;height:48px;margin:0 auto 12px;color:var(--primary);}
+  .upload-title{font-size:16px;color:var(--primary);font-weight:500;margin:0 0 4px;}
+  .upload-hint{font-size:13px;color:var(--fg-subtle);}
+  .upload-zone input[type=file]{display:none;}
+
+  .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-top:20px;}
+  .thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--cream-soft);border:1px solid var(--line);}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .thumb .x{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:99px;background:rgba(0,0,0,.6);color:#fff;border:none;display:grid;place-items:center;font-size:12px;}
+
+  /* Form row */
+  .form-row{display:grid;grid-template-columns:200px 1fr auto;gap:14px;align-items:end;margin-top:24px;padding-top:24px;border-top:1px dashed var(--line);}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--fg-subtle);font-weight:500;}
+  .input{height:48px;border-radius:12px;border:1px solid var(--line);background:var(--paper);padding:0 16px;font-size:15px;color:var(--fg);transition:border-color .12s, box-shadow .12s;font-family:var(--font-mono);font-size:18px;letter-spacing:.05em;}
+  .input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-10);}
+
+  .btn-primary{height:48px;padding:0 28px;border-radius:12px;background:var(--primary);color:#fff;font-size:15px;font-weight:500;border:none;transition:background .12s, transform .08s;display:inline-flex;align-items:center;gap:10px;}
+  .btn-primary:hover{background:#3f261d;}
+  .btn-primary:active{transform:translateY(1px);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* Progress */
+  .progress-card{display:flex;flex-direction:column;gap:14px;}
+  .progress-step{display:flex;align-items:center;gap:14px;font-size:14px;color:var(--fg-muted);}
+  .progress-step .dot{width:18px;height:18px;border-radius:99px;border:2px solid var(--line);background:var(--paper);flex:none;display:grid;place-items:center;font-size:10px;color:var(--paper);}
+  .progress-step.active .dot{border-color:var(--primary);background:var(--paper);animation:pulse 1.4s ease-in-out infinite;}
+  .progress-step.done .dot{border-color:var(--success);background:var(--success);}
+  .progress-step.done .dot::after{content:'✓';color:#fff;font-size:11px;}
+  .progress-step.active{color:var(--primary);font-weight:500;}
+  .progress-step.done{color:var(--fg-muted);}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--primary-20);}50%{box-shadow:0 0 0 6px transparent;}}
+
+  /* Results dashboard */
+  .results-head{margin-bottom:24px;}
+  .results-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--orange);font-weight:600;margin-bottom:8px;}
+  .results-title{font-family:var(--font-display);font-size:34px;color:var(--primary);margin:0 0 6px;line-height:1.05;}
+  .results-sub{font-size:14px;color:var(--fg-muted);}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+
+  .kpi{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+  .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--fg-subtle);font-weight:500;margin-bottom:6px;}
+  .kpi-value{font-family:var(--font-display);font-size:30px;color:var(--primary);line-height:1.1;}
+  .kpi-unit{font-family:var(--font-sans);font-size:13px;color:var(--fg-muted);font-weight:400;margin-left:4px;}
+  .kpi-note{font-size:12px;color:var(--fg-subtle);margin-top:6px;}
+
+  .section{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:16px;}
+  .section-title{font-family:var(--font-display);font-size:22px;color:var(--primary);margin:0 0 16px;}
+
+  .room-card{padding:14px 0;border-bottom:1px solid var(--line-soft);}
+  .room-card:last-child{border-bottom:none;}
+  .room-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
+  .room-name{font-size:15px;font-weight:500;color:var(--primary);text-transform:capitalize;}
+  .room-rating{font-family:var(--font-mono);font-size:13px;color:var(--fg-muted);}
+  .room-rationale{font-size:13px;color:var(--fg-muted);line-height:1.55;margin-bottom:6px;}
+  .room-features{display:flex;flex-wrap:wrap;gap:6px;}
+  .feat-chip{font-size:11px;padding:3px 8px;border-radius:99px;background:var(--cream-soft);color:var(--fg-muted);border:1px solid var(--line-soft);}
+
+  .style-card{padding:14px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;}
+  .style-card.top{border-color:var(--primary);background:var(--cream-soft);}
+  .style-card-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
+  .style-name{font-size:15px;font-weight:600;color:var(--primary);}
+  .style-pred{font-family:var(--font-mono);font-size:13px;color:var(--fg-muted);}
+  .style-meta{font-size:12px;color:var(--fg-subtle);}
+
+  .listing-text{background:var(--cream-soft);border-radius:10px;padding:20px 22px;font-size:14.5px;line-height:1.7;color:var(--fg);white-space:pre-wrap;}
+
+  .action-item{padding:12px 0;border-bottom:1px solid var(--line-soft);}
+  .action-item:last-child{border-bottom:none;}
+  .action-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:4px;}
+  .action-text{font-size:14px;color:var(--primary);font-weight:500;flex:1;}
+  .action-cost{font-family:var(--font-mono);font-size:12px;color:var(--fg-muted);white-space:nowrap;}
+  .action-detail{font-size:12.5px;color:var(--fg-muted);line-height:1.55;}
+  .action-meta{display:inline-flex;gap:8px;margin-top:6px;}
+  .meta-chip{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:99px;font-weight:500;}
+  .meta-chip.roi-high{background:#dcfce7;color:#166534;}
+  .meta-chip.roi-medium{background:#fef3c7;color:#854d0e;}
+  .meta-chip.roi-low{background:var(--line-soft);color:var(--fg-muted);}
+
+  .error-banner{background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.2);border-radius:12px;padding:14px 18px;color:var(--danger);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">E</div>
+      <div>
+        <div class="brand-name">Edensign</div>
+        <div class="brand-sub">Listing Wizard</div>
+      </div>
+    </div>
+    <a class="nav-back" href="index.html">← Style Atlas</a>
+  </div>
+
+  <div class="hero" id="hero">
+    <h1 class="hero-title">Pre-market listing prep, in one shot.</h1>
+    <p class="hero-sub">Drop in your property photos and a ZIP code. We'll analyze condition and quality, recommend the staging style that sells best in that market, and draft a listing description—grounded in real data.</p>
+  </div>
+
+  <div id="stage-input">
+    <div class="card">
+      <div class="upload-zone" id="dropzone">
+        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div class="upload-title">Drop photos here or click to choose</div>
+        <div class="upload-hint">JPG / PNG, up to 30 photos</div>
+        <input type="file" id="file-input" multiple accept="image/*" />
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>ZIP Code</label>
+          <input class="input" id="zip-input" type="text" maxlength="5" placeholder="02135" />
+        </div>
+        <div></div>
+        <button class="btn-primary" id="run-btn" disabled>Run Pipeline →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="stage-progress" style="display:none;">
+    <div class="card progress-card">
+      <h3 style="margin:0 0 8px;font-family:var(--font-display);font-size:24px;color:var(--primary);">Analyzing your property…</h3>
+      <p style="margin:0 0 16px;font-size:13px;color:var(--fg-muted);">This usually takes 30 seconds to 2 minutes.</p>
+      <div class="progress-step active" id="step-upload"><div class="dot"></div><span>Uploading photos</span></div>
+      <div class="progress-step" id="step-analyze"><div class="dot"></div><span>Analyzing photos with vision AI</span></div>
+      <div class="progress-step" id="step-market"><div class="dot"></div><span>Loading market data for ZIP</span></div>
+      <div class="progress-step" id="step-listing"><div class="dot"></div><span>Composing listing description</span></div>
+    </div>
+  </div>
+
+  <div id="stage-results" style="display:none;"></div>
+  <div id="stage-error" style="display:none;"></div>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:8002';
+
+const state = { files: [] };
+const $ = (id) => document.getElementById(id);
+
+const dropzone = $('dropzone');
+const fileInput = $('file-input');
+const thumbs = $('thumbs');
+const zipInput = $('zip-input');
+const runBtn = $('run-btn');
+
+dropzone.addEventListener('click', () => fileInput.click());
+['dragover','dragenter'].forEach(e => dropzone.addEventListener(e, ev => { ev.preventDefault(); dropzone.classList.add('dragover'); }));
+['dragleave','drop'].forEach(e => dropzone.addEventListener(e, ev => { ev.preventDefault(); dropzone.classList.remove('dragover'); }));
+dropzone.addEventListener('drop', ev => addFiles(ev.dataTransfer.files));
+fileInput.addEventListener('change', () => addFiles(fileInput.files));
+zipInput.addEventListener('input', () => { zipInput.value = zipInput.value.replace(/\D/g,'').slice(0,5); updateRunBtn(); });
+
+function addFiles(fileList) {
+  for (const f of fileList) {
+    if (!f.type.startsWith('image/')) continue;
+    if (state.files.length >= 30) break;
+    state.files.push(f);
+  }
+  renderThumbs();
+  updateRunBtn();
+}
+function renderThumbs() {
+  thumbs.innerHTML = '';
+  state.files.forEach((f, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(f);
+    const btn = document.createElement('button');
+    btn.className = 'x';
+    btn.textContent = '×';
+    btn.onclick = () => { state.files.splice(i,1); renderThumbs(); updateRunBtn(); };
+    wrap.appendChild(img);
+    wrap.appendChild(btn);
+    thumbs.appendChild(wrap);
+  });
+}
+function updateRunBtn() {
+  runBtn.disabled = !(state.files.length > 0 && zipInput.value.length === 5);
+}
+
+runBtn.addEventListener('click', runPipeline);
+
+async function runPipeline() {
+  $('stage-input').style.display = 'none';
+  $('stage-error').style.display = 'none';
+  $('stage-progress').style.display = 'block';
+
+  // Fake progress steps (no real streaming endpoint yet)
+  setTimeout(() => advanceStep('step-upload', 'step-analyze'), 1000);
+  setTimeout(() => advanceStep('step-analyze', 'step-market'), 18000);
+  setTimeout(() => advanceStep('step-market', 'step-listing'), 28000);
+
+  const form = new FormData();
+  form.append('zipcode', zipInput.value);
+  state.files.forEach(f => form.append('files', f, f.name));
+
+  try {
+    const r = await fetch(`${API_BASE}/pipeline/run`, { method: 'POST', body: form });
+    if (!r.ok) {
+      const errText = await r.text();
+      throw new Error(`HTTP ${r.status}: ${errText.slice(0,300)}`);
+    }
+    const data = await r.json();
+    renderResults(data);
+  } catch (e) {
+    $('stage-progress').style.display = 'none';
+    $('stage-error').style.display = 'block';
+    $('stage-error').innerHTML = `<div class="error-banner"><strong>Pipeline failed.</strong> ${e.message}</div>`;
+  }
+}
+
+function advanceStep(prevId, nextId) {
+  const prev = $(prevId);
+  if (prev) { prev.classList.remove('active'); prev.classList.add('done'); }
+  const next = $(nextId);
+  if (next) next.classList.add('active');
+}
+
+function renderResults(data) {
+  $('stage-progress').style.display = 'none';
+  const hr = data.home_report || {};
+  const bi = data.bi_analysis || {};
+  const top = (bi.recommended_styles || [])[0];
+  const walk = (bi.walk_score_data || {});
+  const buyer = (bi.hmda_buyer_data || {});
+  const school = (bi.school_profile || {});
+  const macro = (bi.fred_macro || {});
+
+  const dollar = (n) => n == null ? '—' : '$' + Math.round(n).toLocaleString();
+  const days = (n) => n == null ? '—' : Math.round(n) + 'd';
+
+  const out = [];
+  out.push(`<div class="results-head">`);
+  out.push(`<div class="results-eyebrow">Pipeline Complete</div>`);
+  out.push(`<h2 class="results-title">${data.zipcode} · ${data.n_photos} photos analyzed</h2>`);
+  out.push(`<div class="results-sub">Property Q${hr.overall_quality_decimal?.toFixed(1) || '?'} · C${hr.overall_condition_decimal?.toFixed(1) || '?'} · Market data current</div>`);
+  out.push(`</div>`);
+
+  // KPI row
+  out.push(`<div class="grid-4" style="margin-bottom:24px;">`);
+  out.push(`<div class="kpi"><div class="kpi-label">Quality</div><div class="kpi-value">${hr.overall_quality_rating || '—'}<span class="kpi-unit">/Q6</span></div><div class="kpi-note">${hr.overall_quality_decimal?.toFixed(1) || ''} of 6.0</div></div>`);
+  out.push(`<div class="kpi"><div class="kpi-label">Condition</div><div class="kpi-value">${hr.overall_condition_rating || '—'}<span class="kpi-unit">/C6</span></div><div class="kpi-note">${hr.overall_condition_decimal?.toFixed(1) || ''} of 6.0</div></div>`);
+  out.push(`<div class="kpi"><div class="kpi-label">Top Style Prediction</div><div class="kpi-value" style="font-size:22px;">${top?.style || '—'}</div><div class="kpi-note">${dollar(top?.model_predicted_price)} · ${days(top?.model_predicted_days_on_market)}</div></div>`);
+  out.push(`<div class="kpi"><div class="kpi-label">Walk · Schools</div><div class="kpi-value" style="font-size:22px;">${walk.walk_score || '—'} · ${school.quality_score || '—'}</div><div class="kpi-note">${walk.walk_desc || ''}</div></div>`);
+  out.push(`</div>`);
+
+  // Listing text
+  out.push(`<div class="section"><div class="section-title">Suggested Listing Description</div>`);
+  out.push(`<div class="listing-text">${escapeHtml(data.listing_text || '—')}</div></div>`);
+
+  // Two-column: rooms + actions
+  out.push(`<div class="grid-2">`);
+
+  // Rooms
+  out.push(`<div class="section"><div class="section-title">Per-Room Assessment</div>`);
+  (hr.rooms || []).forEach(r => {
+    out.push(`<div class="room-card">`);
+    out.push(`<div class="room-head"><div class="room-name">${r.room_type.replace('_',' ')}</div><div class="room-rating">${r.quality_rating} · ${r.condition_rating}</div></div>`);
+    out.push(`<div class="room-rationale">${escapeHtml(r.quality_rationale || '')}</div>`);
+    if (r.notable_features?.length) {
+      out.push(`<div class="room-features">`);
+      r.notable_features.slice(0,6).forEach(f => out.push(`<span class="feat-chip">${escapeHtml(f)}</span>`));
+      out.push(`</div>`);
+    }
+    out.push(`</div>`);
+  });
+  out.push(`</div>`);
+
+  // Styles + Actions stacked
+  out.push(`<div>`);
+  out.push(`<div class="section"><div class="section-title">Style Options for ${data.zipcode}</div>`);
+  (bi.recommended_styles || []).slice(0,3).forEach((s, i) => {
+    out.push(`<div class="style-card ${i===0?'top':''}">`);
+    out.push(`<div class="style-card-head"><div class="style-name">${i+1}. ${s.style}</div><div class="style-pred">${dollar(s.model_predicted_price)}</div></div>`);
+    out.push(`<div class="style-meta">${s.n_listings} comps · ${days(s.model_predicted_days_on_market)} predicted DOM</div>`);
+    out.push(`</div>`);
+  });
+  out.push(`</div>`);
+
+  const allActions = [...(hr.must_do||[]), ...(hr.recommended||[]), ...(hr.optional||[])];
+  if (allActions.length) {
+    out.push(`<div class="section"><div class="section-title">Upgrade Recommendations</div>`);
+    allActions.forEach(a => {
+      out.push(`<div class="action-item">`);
+      out.push(`<div class="action-head"><div class="action-text">${escapeHtml(a.text)}</div><div class="action-cost">${a.estimated_cost_range || ''}</div></div>`);
+      out.push(`<div class="action-detail">${escapeHtml(a.detail || '')}</div>`);
+      out.push(`<div class="action-meta"><span class="meta-chip roi-${a.roi_tier}">ROI ${a.roi_tier}</span><span class="meta-chip roi-${a.cost_tier}">Cost ${a.cost_tier}</span></div>`);
+      out.push(`</div>`);
+    });
+    out.push(`</div>`);
+  }
+  out.push(`</div>`); // end styles+actions col
+  out.push(`</div>`); // end grid-2
+
+  // Buyer profile footer
+  if (buyer.buyer_archetype) {
+    out.push(`<div class="section"><div class="section-title">Buyer Profile (${data.zipcode})</div>`);
+    out.push(`<div style="font-size:14px;color:var(--fg-muted);line-height:1.65;">`);
+    out.push(`<strong style="color:var(--primary);">${buyer.buyer_archetype}</strong>, ages ${buyer.dominant_age_group}, median income ${dollar(buyer.median_income_k*1000)}, median loan ${dollar(buyer.median_loan_k*1000)}. ${buyer.pct_age_under_45?.toFixed(0)}% of recent buyers under 45.`);
+    out.push(`</div></div>`);
+  }
+
+  $('stage-results').innerHTML = out.join('');
+  $('stage-results').style.display = 'block';
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+</script>
+</body>
+</html>

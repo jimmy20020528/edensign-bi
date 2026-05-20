@@ -1,0 +1,535 @@
+# Home Report AI — Upgrade Action Library (UAD-based)
+# Triggers fire against RoomSummary detected_materials and Q/C decimals.
+#
+# trigger.room_types      : list of room type strings, or null (= all rooms)
+# trigger.material.field  : field in detected_materials to check
+# trigger.material.values : match if detected value is any of these
+# trigger.quality_worse_than  : int N — fires if quality tier >= N+1 (e.g., 3 → Q4, Q5, Q6)
+# trigger.condition_worse_than: int N — fires if condition tier >= N+1 (e.g., 3 → C4, C5, C6)
+
+# ── KITCHEN — MATERIAL UPGRADES ─────────────────────────────────────────────
+
+- id: kitchen_countertop_laminate
+  trigger:
+    room_types: [kitchen]
+    material:
+      field: countertop
+      values: [laminate]
+  text: Upgrade kitchen countertops from laminate to stone
+  detail: >
+    Laminate countertops place the kitchen at Q4–Q5 and are one of the first things
+    buyers notice. Replacing with quartz or granite is the single highest-ROI kitchen
+    upgrade, pushing the rating toward Q3. Average return is 70–80% in most US markets.
+  quality_impact: "Q4–Q5 → Q3"
+  cost_tier: medium
+  roi_tier: high
+  visual_impact: 5
+  is_urgent: false
+  estimated_cost_range: "$3,000–$8,000"
+
+- id: kitchen_countertop_tile
+  trigger:
+    room_types: [kitchen]
+    material:
+      field: countertop
+      values: [ceramic_tile]
+  text: Replace tiled kitchen countertops with stone or solid surface
+  detail: >
+    Ceramic tile countertops are associated with Q4–Q5 and appear dated to most buyers.
+    Replacing with quartz or a solid surface modernizes the kitchen and supports a Q3 rating.
+  quality_impact: "Q4 → Q3"
+  cost_tier: medium
+  roi_tier: high
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$3,000–$7,000"
+
+- id: kitchen_cabinets_stock
+  trigger:
+    room_types: [kitchen]
+    material:
+      field: cabinets
+      values: [stock_flat_panel]
+  text: Replace stock flat-panel cabinets with shaker-style or semi-custom
+  detail: >
+    Flat-panel stock cabinets are the defining characteristic of Q4–Q5 kitchens.
+    Upgrading to shaker-style semi-custom cabinets is high-impact and substantially
+    improves quality rating and buyer perception.
+  quality_impact: "Q4–Q5 → Q3"
+  cost_tier: high
+  roi_tier: high
+  visual_impact: 5
+  is_urgent: false
+  estimated_cost_range: "$8,000–$20,000"
+
+- id: kitchen_appliances_entry
+  trigger:
+    room_types: [kitchen]
+    material:
+      field: appliances
+      values: [entry_level]
+  text: Replace entry-level appliances with stainless steel
+  detail: >
+    Entry-level appliances pull the kitchen toward Q5. Upgrading to stainless steel
+    (refrigerator, range, dishwasher package) is a visible quality signal that buyers
+    and appraisers note immediately.
+  quality_impact: "Q5 → Q4"
+  cost_tier: high
+  roi_tier: medium
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$3,000–$8,000"
+
+- id: kitchen_fixtures_basic
+  trigger:
+    room_types: [kitchen]
+    material:
+      field: fixtures
+      values: [basic]
+  text: Upgrade kitchen faucet and hardware to brushed nickel or matte black
+  detail: >
+    Basic chrome fixtures and hardware are a low-cost upgrade with outsized visual
+    impact. Replacing with brushed nickel or matte black aligns the kitchen with
+    current buyer expectations at Q3–Q4.
+  quality_impact: "cosmetic — supports Q3–Q4"
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 3
+  is_urgent: false
+  estimated_cost_range: "$300–$1,200"
+
+# ── BATHROOM — MATERIAL UPGRADES ────────────────────────────────────────────
+
+- id: bathroom_fixtures_basic
+  trigger:
+    room_types: [bathroom]
+    material:
+      field: fixtures
+      values: [basic]
+  text: Upgrade bathroom fixtures to brushed nickel or matte black
+  detail: >
+    Basic chrome or plastic bath fixtures are associated with Q4–Q5. Upgrading faucets,
+    towel bars, and lighting hardware to brushed nickel or matte black is a low-cost,
+    high-visual-impact improvement with strong ROI.
+  quality_impact: "Q4–Q5 → Q3–Q4"
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$500–$2,000"
+
+- id: bathroom_vanity_stock
+  trigger:
+    room_types: [bathroom]
+    material:
+      field: cabinets
+      values: [stock_flat_panel, builder_shaker]
+    quality_worse_than: 3
+  text: Replace stock vanity with semi-custom or floating vanity
+  detail: >
+    Stock vanities limit bathroom quality to Q4. A semi-custom or floating vanity
+    with an integrated stone top is the single highest-ROI bathroom upgrade in
+    most markets, substantially improving the Q rating.
+  quality_impact: "Q4 → Q3"
+  cost_tier: medium
+  roi_tier: high
+  visual_impact: 5
+  is_urgent: false
+  estimated_cost_range: "$1,500–$5,000"
+
+- id: bathroom_countertop_laminate
+  trigger:
+    room_types: [bathroom]
+    material:
+      field: countertop
+      values: [laminate]
+  text: Replace laminate bathroom vanity top with stone or solid surface
+  detail: >
+    Laminate vanity tops are a Q5 indicator in bathrooms. Replacing with a quartz
+    or marble top is typically low-cost and moves the bathroom toward Q3–Q4.
+  quality_impact: "Q5 → Q3–Q4"
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$400–$1,500"
+
+# ── FLOORING — UPGRADES ─────────────────────────────────────────────────────
+
+- id: flooring_vinyl_main
+  trigger:
+    room_types: [living_room, dining, hallway]
+    material:
+      field: flooring
+      values: [vinyl_lvp, carpet]
+  text: Upgrade main living area flooring to engineered or solid hardwood
+  detail: >
+    Vinyl LVP or carpet in primary living areas limits quality to Q4–Q5.
+    Upgrading to engineered or solid hardwood throughout the main floor is one of
+    the most impactful improvements for both quality rating and market appeal.
+  quality_impact: "Q4–Q5 → Q3"
+  cost_tier: high
+  roi_tier: high
+  visual_impact: 5
+  is_urgent: false
+  estimated_cost_range: "$8,000–$20,000"
+
+- id: flooring_carpet_bedroom
+  trigger:
+    room_types: [bedroom]
+    material:
+      field: flooring
+      values: [carpet]
+  text: Replace or deep-clean bedroom carpet
+  detail: >
+    Worn or dated carpet is one of the most common buyer objections. Deep cleaning
+    restores appearance at low cost; replacement with new carpet or LVP adds fresh
+    appeal and supports condition improvement.
+  quality_impact: "condition improvement"
+  cost_tier: low
+  roi_tier: medium
+  visual_impact: 3
+  is_urgent: false
+  estimated_cost_range: "$500–$3,000"
+
+- id: flooring_ceramic_kitchen
+  trigger:
+    room_types: [kitchen]
+    material:
+      field: flooring
+      values: [vinyl_lvp, ceramic_tile]
+  text: Upgrade kitchen flooring to porcelain tile or hardwood
+  detail: >
+    Vinyl or basic ceramic tile in the kitchen is consistent with Q4. Upgrading to
+    large-format porcelain tile or hardwood improves both quality rating and the
+    overall kitchen score.
+  quality_impact: "Q4 → Q3"
+  cost_tier: medium
+  roi_tier: medium
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$3,000–$8,000"
+
+# ── LIGHTING ────────────────────────────────────────────────────────────────
+
+- id: lighting_basic_all
+  trigger:
+    room_types: null
+    material:
+      field: fixtures
+      values: [basic]
+    quality_worse_than: 3
+  text: Replace basic light fixtures with updated designer or semi-custom alternatives
+  detail: >
+    Lighting is one of the most visible quality signals in listing photos and buyer
+    walkthroughs. Replacing basic builder-grade fixtures with current-style pendants,
+    chandeliers, or recessed lighting is relatively low-cost and high-impact.
+  quality_impact: "supports Q3–Q4"
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$200–$800 per fixture"
+
+# ── CONDITION — DEFERRED MAINTENANCE ────────────────────────────────────────
+
+- id: condition_c4_repaint
+  trigger:
+    room_types: null
+    condition_worse_than: 3
+  text: Address deferred maintenance — repaint and surface repairs
+  detail: >
+    Rooms at C4 condition (minor deferred maintenance) benefit most from fresh paint
+    and targeted surface repairs. Repainting is the highest-ROI cosmetic improvement
+    available and directly improves condition rating toward C3.
+  quality_impact: null
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$500–$3,000 per room"
+
+- id: condition_c5_urgent
+  trigger:
+    room_types: null
+    condition_worse_than: 4
+  text: "URGENT: Address C5 deterioration before listing"
+  detail: >
+    Rooms in C5 condition (obvious deterioration) significantly reduce buyer
+    confidence and appraised value. All visible deterioration, damaged surfaces,
+    and non-functional systems must be addressed before any cosmetic improvements.
+    Professional assessment is recommended.
+  quality_impact: null
+  cost_tier: medium
+  roi_tier: high
+  visual_impact: 5
+  is_urgent: true
+  estimated_cost_range: "Varies — professional assessment recommended"
+
+# ── EXTERIOR ────────────────────────────────────────────────────────────────
+
+- id: exterior_curb_appeal
+  trigger:
+    room_types: [exterior]
+    quality_worse_than: 3
+  text: Improve exterior curb appeal
+  detail: >
+    Exterior Q4 or lower significantly affects first impressions and online listing
+    photo performance. Landscaping cleanup, a fresh coat of paint on the front door,
+    updated entry hardware, and exterior lighting are high-ROI improvements that
+    directly increase quality rating.
+  quality_impact: "Q4–Q5 → Q3–Q4"
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 5
+  is_urgent: false
+  estimated_cost_range: "$1,000–$5,000"
+
+# ── UAD 3.6 — KITCHEN UPDATE STATUS ─────────────────────────────────────────
+
+- id: kitchen_not_updated
+  trigger:
+    room_types: [kitchen]
+    material:
+      field: kitchen_update_status
+      values: [not_updated]
+  text: Modernize kitchen — original finishes have not been updated
+  detail: >
+    UAD 3.6 classifies this kitchen as "Not Updated" — finishes and materials remain
+    as installed at original construction with no significant changes. This is the
+    primary driver of a Q4–Q5 kitchen rating. A targeted update (countertops, cabinet
+    hardware, fixtures, paint) can shift the kitchen to "Updated" status and improve
+    the quality rating meaningfully.
+  quality_impact: "Q4–Q5 → Q3"
+  cost_tier: medium
+  roi_tier: high
+  visual_impact: 5
+  is_urgent: false
+  estimated_cost_range: "$5,000–$15,000"
+
+- id: kitchen_updated_to_remodeled
+  trigger:
+    room_types: [kitchen]
+    material:
+      field: kitchen_update_status
+      values: [updated]
+    quality_worse_than: 3
+  text: Consider full kitchen remodel to reach Q3 quality
+  detail: >
+    This kitchen has been updated (UAD 3.6 "Updated" status) but remains below Q3
+    quality. A full remodel — including semi-custom cabinetry, stone countertops,
+    and upgraded appliances — would bring it to UAD "Remodeled" status and a Q3 rating,
+    maximizing resale value.
+  quality_impact: "Q4 → Q3"
+  cost_tier: high
+  roi_tier: medium
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$20,000–$50,000"
+
+# ── UAD 3.6 — BATHROOM UPDATE STATUS ────────────────────────────────────────
+
+- id: bathroom_not_updated
+  trigger:
+    room_types: [bathroom]
+    material:
+      field: bathroom_update_status
+      values: [not_updated]
+  text: Update bathroom — original finishes present since construction
+  detail: >
+    UAD 3.6 classifies this bathroom as "Not Updated" — all finishes reflect the
+    original construction. Buyers and appraisers treat original bathrooms as a
+    significant quality detractor. Replacing fixtures, adding stone or solid-surface
+    vanity tops, and retiling is typically the second highest-ROI upgrade after the
+    kitchen.
+  quality_impact: "Q4–Q5 → Q3"
+  cost_tier: medium
+  roi_tier: high
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$3,000–$10,000"
+
+# ── UAD 3.6 — CEILING HEIGHT OPPORTUNITY ────────────────────────────────────
+
+- id: ceiling_low_living
+  trigger:
+    room_types: [living_room, dining]
+    material:
+      field: ceiling_height
+      values: [low]
+  text: Address low ceiling height — below 8 ft impacts perceived quality
+  detail: >
+    Ceiling height below 8 ft is associated with Q4–Q5 perception and limits the
+    renovation potential of the space. While structural ceiling raising is expensive,
+    strategic use of vertical-emphasis design (tall built-ins, vertical tile,
+    floor-to-ceiling drapes) can mitigate the visual impact without structural work.
+  quality_impact: "cosmetic mitigation — Q4–Q5 perception"
+  cost_tier: low
+  roi_tier: medium
+  visual_impact: 3
+  is_urgent: false
+  estimated_cost_range: "$500–$3,000 (design; structural would be $10,000+)"
+
+# ── UAD NOTABLE FEATURE — SAFETY / URGENCY ──────────────────────────────────
+
+- id: water_stain_urgent
+  trigger:
+    room_types: null
+    notable_feature: "water stain"
+  text: "URGENT: Investigate and remediate water staining"
+  detail: >
+    Water staining is a UAD C5 condition indicator and may signal active or past
+    leaks from roof, plumbing, or HVAC. Unresolved moisture damage degrades condition
+    rating, reduces appraised value, and can lead to mold. Source must be identified
+    and repaired before any cosmetic remediation.
+  quality_impact: null
+  cost_tier: medium
+  roi_tier: high
+  visual_impact: 4
+  is_urgent: true
+  estimated_cost_range: "$500–$5,000+ depending on source"
+
+- id: peeling_paint
+  trigger:
+    room_types: null
+    notable_feature: "peeling"
+  text: "URGENT: Address peeling paint — possible lead paint or moisture concern"
+  detail: >
+    Peeling paint is flagged under UAD C4–C5 condition and is a required repair for
+    FHA/VA-backed financing. In pre-1978 homes it may indicate lead paint, triggering
+    additional disclosure requirements. Sand, prime, and repaint all affected surfaces
+    before listing.
+  quality_impact: null
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 4
+  is_urgent: true
+  estimated_cost_range: "$300–$2,000"
+
+- id: broken_tile
+  trigger:
+    room_types: null
+    notable_feature: "broken tile"
+  text: Replace broken or cracked tile
+  detail: >
+    Broken or cracked tile is a visible C4 condition indicator that buyers and
+    appraisers note immediately. Matching replacement tile is often low-cost and
+    restores condition rating. If matching tile is unavailable, a full retile of
+    the affected surface may be needed.
+  quality_impact: "condition improvement"
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 3
+  is_urgent: false
+  estimated_cost_range: "$200–$1,500"
+
+- id: damaged_wall
+  trigger:
+    room_types: null
+    notable_feature: "damaged wall"
+  text: Repair wall damage before listing
+  detail: >
+    Visible wall damage (cracks, holes, gouges) is a C4 condition signal. Drywall
+    repair, skim coat, and repainting are low-cost, high-ROI repairs that directly
+    improve condition rating and buyer confidence.
+  quality_impact: "condition improvement"
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 3
+  is_urgent: false
+  estimated_cost_range: "$200–$1,000"
+
+- id: cracked_ceiling
+  trigger:
+    room_types: null
+    notable_feature: "cracked ceiling"
+  text: "URGENT: Evaluate and repair cracked ceiling"
+  detail: >
+    Ceiling cracks can indicate structural settlement, water intrusion, or deferred
+    maintenance. UAD appraisers flag ceiling cracks as C4–C5 condition evidence. A
+    licensed contractor should evaluate the cause before repair. Cosmetic hairline
+    cracks may be skim-coated; wider cracks require investigation.
+  quality_impact: null
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 4
+  is_urgent: true
+  estimated_cost_range: "$300–$3,000"
+
+# ── UAD Q3 POSITIVE — FEATURES THAT SUPPORT HIGHER RATINGS ─────────────────
+
+- id: no_crown_molding_q4
+  trigger:
+    room_types: [living_room, dining]
+    quality_worse_than: 3
+  text: Add crown molding to elevate living areas toward Q3
+  detail: >
+    Crown molding is explicitly listed in UAD Q3 interior criteria as an ornamentation
+    indicator. Adding 3.5–5 inch crown molding to the primary living and dining areas
+    is a cost-effective way to demonstrate Q3-level finish quality to buyers and
+    appraisers.
+  quality_impact: "supports Q3"
+  cost_tier: low
+  roi_tier: medium
+  visual_impact: 3
+  is_urgent: false
+  estimated_cost_range: "$500–$2,500"
+
+- id: standard_appliances_kitchen
+  trigger:
+    room_types: [kitchen]
+    material:
+      field: appliances
+      values: [standard]
+    quality_worse_than: 3
+  text: Upgrade appliances to stainless-steel package for Q3 alignment
+  detail: >
+    Standard white or black appliances are a Q4 indicator per UAD interior criteria.
+    Replacing with a coordinated upgraded stainless-steel package (refrigerator,
+    range, dishwasher) is a high-visibility upgrade that supports a Q3 rating and
+    aligns with buyer expectations in most markets.
+  quality_impact: "Q4 → Q3"
+  cost_tier: high
+  roi_tier: medium
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$3,500–$9,000"
+
+# ── BATHROOM — ADDITIONAL MATERIAL UPGRADES ──────────────────────────────────
+
+- id: bathroom_tile_upgrade
+  trigger:
+    room_types: [bathroom]
+    material:
+      field: flooring
+      values: [vinyl_lvp, carpet]
+  text: Replace bathroom flooring with ceramic or porcelain tile
+  detail: >
+    Vinyl or carpet in bathrooms is a Q4–Q5 indicator and creates hygiene concerns
+    for buyers. Ceramic or porcelain tile is the minimum expected standard for a Q3
+    bathroom and is relatively low-cost to install.
+  quality_impact: "Q4–Q5 → Q3"
+  cost_tier: low
+  roi_tier: high
+  visual_impact: 4
+  is_urgent: false
+  estimated_cost_range: "$800–$3,000"
+
+# ── EXTERIOR — CONDITION URGENCY ─────────────────────────────────────────────
+
+- id: exterior_c5_urgent
+  trigger:
+    room_types: [exterior]
+    condition_worse_than: 4
+  text: "URGENT: Address exterior C5 deterioration"
+  detail: >
+    Exterior C5 condition (obvious physical deterioration) significantly reduces
+    curb appeal, appraised value, and financing eligibility. Peeling exterior paint,
+    damaged siding, or deteriorated trim must be repaired before any interior work.
+    A licensed contractor inspection is recommended.
+  quality_impact: null
+  cost_tier: medium
+  roi_tier: high
+  visual_impact: 5
+  is_urgent: true
+  estimated_cost_range: "Varies — contractor assessment recommended"

@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Secrets — NEVER commit
+.env
+*.env.local
+.env.production
+
+# macOS
+.DS_Store
+._*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Large data files (regenerate via scripts or ingestion)
+bi/data/redfin_zip_market.tsv.gz
+bi/data/hmda_*.csv
+bi/data/nces_state_*.json
+bi/data/walkscore_*.json
+bi/data/geocode_*.json
+cv-models/data/
+cv-models/classifier_dataset/
+cv-models/artifacts/
+
+# wandb runs
+wandb/
+
+# Node
+node_modules/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS junk
+Thumbs.db
