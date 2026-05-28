@@ -49,6 +49,17 @@ CREATE TABLE listings (
     -- Photo URLs (VLM分类用)
     photo_urls      JSONB DEFAULT '[]'::jsonb,  -- JSON数组存所有照片URL
 
+    -- Listing type + rent price (added migration 005)
+    listing_type    TEXT DEFAULT 'sold',        -- sold | for_sale | for_rent
+    monthly_rent    INTEGER,                    -- asking rent USD/month (for_rent only)
+
+    -- External source URLs (added via migration)
+    redfin_url          TEXT,
+    zillow_url          TEXT,
+    realtor_url         TEXT,
+    canonical_id        TEXT,
+    data_quality_flag   TEXT,
+
     -- Metadata
     source          TEXT DEFAULT 'redfin',      -- 数据来源标记
     created_at      TIMESTAMPTZ DEFAULT NOW(),
