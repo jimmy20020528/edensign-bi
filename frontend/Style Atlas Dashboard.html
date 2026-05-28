@@ -1,0 +1,1458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Style Atlas — Edensign</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montaga&family=Jost:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --primary:#513126;
+    --primary-90:rgba(81,49,38,.9);
+    --primary-50:rgba(81,49,38,.5);
+    --primary-20:rgba(81,49,38,.2);
+    --primary-10:rgba(81,49,38,.1);
+    --primary-05:rgba(81,49,38,.05);
+    --cream:#f5efe6;
+    --cream-soft:#faf6ef;
+    --paper:#ffffff;
+    --amber:#f5a524;
+    --amber-soft:#fef4dd;
+    --orange:#ed722e;
+    --sage:#8aa590;
+    --sage-deep:#5d7a64;
+    --sage-soft:#e8efe9;
+    --fg:#18181b;
+    --fg-muted:#52525b;
+    --fg-subtle:#71717a;
+    --fg-faint:#a1a1aa;
+    --line:#e4e4e7;
+    --line-soft:#f4f4f5;
+    --textfield:#fafafa;
+    --success:#16a34a;
+    --danger:#dc2626;
+
+    --font-display:'Montaga', Georgia, serif;
+    --font-sans:'Jost','Inter',system-ui,sans-serif;
+    --font-ui:'Inter',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+
+    --shadow-xs:0 1px 2px rgba(0,0,0,.04);
+    --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --shadow-md:0 4px 12px rgba(81,49,38,.08);
+    --shadow-lg:0 12px 32px rgba(81,49,38,.12);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--font-sans);
+    color:var(--fg);
+    background:var(--cream);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  button{font-family:inherit;cursor:default}
+  input,select{font-family:inherit}
+  a{color:inherit;text-decoration:none}
+
+  /* ============== APP CHROME ============== */
+  .app{
+    min-height:100vh;
+    display:grid;
+    grid-template-columns:240px 1fr;
+  }
+
+  /* Sidebar */
+  .sidebar{
+    background:var(--primary);
+    color:#f5efe6;
+    padding:24px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:32px;
+    position:sticky;top:0;height:100vh;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    padding:4px 6px;
+  }
+  .brand-mark{
+    width:28px;height:28px;border-radius:8px;
+    background:var(--cream);
+    display:grid;place-items:center;
+    color:var(--primary);
+    font-family:var(--font-display);
+    font-size:18px;
+    line-height:1;
+  }
+  .brand-name{
+    font-family:var(--font-display);
+    font-size:20px;
+    color:#fff;
+    letter-spacing:.01em;
+  }
+  .brand-sub{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    color:rgba(245,239,230,.55);
+    margin-top:2px;
+  }
+  .nav-section{
+    display:flex;flex-direction:column;gap:2px;
+  }
+  .nav-label{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    color:rgba(245,239,230,.5);
+    padding:0 10px;
+    margin-bottom:8px;
+    font-weight:500;
+  }
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:14px;
+    color:rgba(245,239,230,.78);
+    transition:background .12s,color .12s;
+  }
+  .nav-item:hover{background:rgba(245,239,230,.06);color:#fff}
+  .nav-item.active{background:rgba(245,239,230,.1);color:#fff}
+  .nav-item .icn{width:16px;height:16px;flex:none}
+  .nav-item .pill-new{
+    margin-left:auto;
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    background:var(--amber);
+    color:var(--primary);
+    padding:2px 6px;
+    border-radius:999px;
+    font-weight:600;
+  }
+
+  .sidebar-foot{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+  .org-card{
+    border:1px solid rgba(245,239,230,.12);
+    background:rgba(245,239,230,.04);
+    border-radius:10px;
+    padding:10px 12px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .org-avatar{
+    width:32px;height:32px;border-radius:8px;
+    background:linear-gradient(135deg,var(--amber),var(--orange));
+    display:grid;place-items:center;
+    color:var(--primary);font-weight:700;font-size:12px;
+  }
+  .org-meta{font-size:12px;line-height:1.3}
+  .org-meta strong{display:block;color:#fff;font-weight:500}
+  .org-meta span{color:rgba(245,239,230,.55)}
+
+  /* Main */
+  main{
+    background:var(--cream);
+    min-height:100vh;
+    display:flex;flex-direction:column;
+  }
+
+  /* Topbar */
+  .topbar{
+    height:60px;
+    border-bottom:1px solid var(--line);
+    background:rgba(245,239,230,.6);
+    backdrop-filter:saturate(1.2) blur(6px);
+    display:flex;align-items:center;
+    padding:0 32px;
+    gap:24px;
+    position:sticky;top:0;z-index:20;
+  }
+  .crumbs{
+    display:flex;align-items:center;gap:8px;
+    font-size:13px;color:var(--fg-muted);
+  }
+  .crumbs strong{color:var(--primary);font-weight:500}
+  .crumbs .sep{color:var(--fg-faint)}
+  .topbar-right{
+    margin-left:auto;display:flex;align-items:center;gap:12px;
+  }
+  .api-status{
+    display:flex;align-items:center;gap:8px;
+    font-size:12px;color:var(--fg-muted);
+    font-family:var(--font-mono);
+  }
+  .api-dot{
+    width:8px;height:8px;border-radius:999px;background:var(--success);
+    box-shadow:0 0 0 3px rgba(22,163,74,.15);
+    animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+    50%{box-shadow:0 0 0 6px rgba(22,163,74,.05)}
+  }
+  .icon-btn{
+    width:34px;height:34px;border-radius:8px;
+    border:1px solid var(--line);
+    background:#fff;
+    display:grid;place-items:center;
+    color:var(--fg-muted);
+  }
+  .icon-btn:hover{background:var(--cream-soft);color:var(--primary)}
+
+  /* ============== PAGE LAYOUT ============== */
+  .page{
+    padding:28px 32px 64px;
+    max-width:1320px;
+    width:100%;
+    margin:0 auto;
+  }
+
+  /* Page header */
+  .page-head{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    gap:24px;margin-bottom:24px;
+  }
+  .page-title{
+    font-family:var(--font-display);
+    font-size:38px;line-height:1.05;
+    color:var(--primary);
+    margin:0 0 6px;
+    letter-spacing:-.005em;
+  }
+  .page-sub{
+    font-size:15px;color:var(--fg-muted);
+    max-width:560px;line-height:1.5;margin:0;
+  }
+  .head-actions{display:flex;align-items:center;gap:10px}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:9px 16px;
+    border-radius:999px;
+    font-size:14px;font-weight:500;
+    border:1px solid transparent;
+    transition:background .12s,border-color .12s,color .12s,transform .08s;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--primary);color:#fff}
+  .btn.primary:hover{background:#3f261d}
+  .btn.ghost{background:transparent;border-color:var(--line);color:var(--primary)}
+  .btn.ghost:hover{background:#fff;border-color:var(--primary-20)}
+  .btn.amber{background:var(--amber);color:var(--primary)}
+  .btn.amber:hover{background:#e89a18}
+
+  /* ============== SEARCH PANEL ============== */
+  .search-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:24px;
+    box-shadow:var(--shadow-sm);
+    margin-bottom:24px;
+  }
+  .search-row{
+    display:grid;
+    grid-template-columns:1.4fr 1fr 1fr auto;
+    gap:14px;
+    align-items:end;
+  }
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    color:var(--fg-subtle);
+    font-weight:500;
+  }
+  .input-wrap{
+    position:relative;
+    display:flex;align-items:center;
+  }
+  .input-wrap .ipre{
+    position:absolute;left:14px;
+    color:var(--fg-faint);
+    pointer-events:none;
+  }
+  .input{
+    width:100%;
+    height:48px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    padding:0 16px;
+    font-size:15px;
+    color:var(--fg);
+    transition:border-color .12s,box-shadow .12s,background .12s;
+    font-family:var(--font-sans);
+  }
+  .input.with-pre{padding-left:42px}
+  .input:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 0 4px var(--primary-10);
+  }
+  .input.zip{
+    font-family:var(--font-mono);
+    font-size:18px;
+    font-weight:500;
+    letter-spacing:.05em;
+  }
+  .select{
+    height:48px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 14px center;
+    padding:0 38px 0 16px;
+    font-size:15px;color:var(--fg);
+    appearance:none;
+    cursor:default;
+  }
+  .submit-btn{
+    height:48px;
+    padding:0 22px;
+    border-radius:12px;
+    background:var(--primary);
+    color:#fff;
+    font-size:15px;font-weight:500;
+    display:inline-flex;align-items:center;gap:10px;
+    border:none;
+    transition:background .12s,transform .08s;
+  }
+  .submit-btn:hover{background:#3f261d}
+  .submit-btn:active{transform:translateY(1px)}
+  .submit-btn:disabled{opacity:.6}
+
+  .search-foot{
+    display:flex;align-items:center;gap:18px;
+    margin-top:14px;padding-top:14px;
+    border-top:1px dashed var(--line);
+    font-size:12px;color:var(--fg-muted);
+  }
+  .search-foot .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 10px;
+    border-radius:999px;
+    background:var(--cream);
+    color:var(--primary);
+    font-weight:500;
+    border:1px solid var(--primary-10);
+  }
+  .recent{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    color:var(--fg-muted);
+    font-family:var(--font-mono);
+    font-size:11.5px;
+  }
+  .recent:hover{border-color:var(--primary-20);color:var(--primary)}
+
+  /* ============== RESULTS HEAD ============== */
+  .results-head{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    gap:24px;margin:8px 0 16px;
+  }
+  .market-summary{flex:1;min-width:0}
+  .market-eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.16em;
+    color:var(--orange);
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  .market-eyebrow::before{
+    content:"";width:24px;height:1px;background:currentColor;
+  }
+  .market-title{
+    font-family:var(--font-display);
+    font-size:30px;color:var(--primary);
+    margin:0 0 6px;line-height:1.1;
+  }
+  .market-meta{
+    display:flex;flex-wrap:wrap;gap:14px;
+    font-size:13px;color:var(--fg-muted);
+  }
+  .market-meta b{color:var(--primary);font-weight:500}
+  .meta-sep{color:var(--fg-faint)}
+
+  /* KPI strip */
+  .kpis{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin-bottom:24px;
+  }
+  .kpi{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px 20px;
+    display:flex;flex-direction:column;gap:6px;
+    position:relative;
+    overflow:hidden;
+  }
+  .kpi-label{
+    font-size:11px;text-transform:uppercase;letter-spacing:.12em;
+    color:var(--fg-subtle);font-weight:500;
+  }
+  .kpi-value{
+    font-family:var(--font-display);
+    font-size:30px;color:var(--primary);
+    line-height:1;
+  }
+  .kpi-value .unit{
+    font-family:var(--font-sans);
+    font-size:14px;color:var(--fg-muted);
+    margin-left:4px;
+    font-weight:400;
+  }
+  .kpi-delta{
+    font-size:12px;display:inline-flex;align-items:center;gap:4px;
+    font-family:var(--font-mono);font-weight:500;
+  }
+  .kpi-delta.up{color:var(--success)}
+  .kpi-delta.down{color:var(--danger)}
+  .kpi-delta.flat{color:var(--fg-muted)}
+  .kpi-spark{
+    position:absolute;right:14px;top:18px;
+    width:64px;height:24px;opacity:.55;
+  }
+
+  /* ============== RESULTS GRID ============== */
+  .results-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+    margin-bottom:32px;
+  }
+  .style-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    display:flex;flex-direction:column;
+    transition:border-color .15s,box-shadow .15s,transform .15s;
+    position:relative;
+  }
+  .style-card:hover{
+    border-color:var(--primary-20);
+    box-shadow:var(--shadow-md);
+    transform:translateY(-2px);
+  }
+  .style-card.selected{
+    border-color:var(--primary);
+    box-shadow:0 0 0 4px var(--primary-10);
+  }
+  .style-rank{
+    position:absolute;top:14px;left:14px;
+    z-index:2;
+    background:rgba(255,255,255,.95);
+    backdrop-filter:blur(4px);
+    border-radius:999px;
+    padding:5px 10px;
+    font-family:var(--font-mono);
+    font-size:11px;font-weight:600;
+    color:var(--primary);
+    letter-spacing:.04em;
+    display:inline-flex;align-items:center;gap:5px;
+  }
+  .style-rank .star{color:var(--amber)}
+  .style-badge{
+    position:absolute;top:14px;right:14px;
+    z-index:2;
+    background:var(--amber);
+    color:var(--primary);
+    padding:4px 9px;
+    border-radius:999px;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    font-weight:600;
+  }
+  .style-photo{
+    aspect-ratio:4/3;
+    width:100%;
+    background:#eee;
+    object-fit:cover;
+    display:block;
+    border-bottom:1px solid var(--line);
+  }
+  .style-body{
+    padding:18px 20px 20px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .style-name{
+    font-family:var(--font-display);
+    font-size:22px;color:var(--primary);
+    margin:0;line-height:1.15;
+  }
+  .style-tags{
+    display:flex;flex-wrap:wrap;gap:6px;
+  }
+  .tag{
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:999px;
+    background:var(--cream);
+    color:var(--primary);
+    border:1px solid var(--primary-10);
+  }
+  .score-row{
+    display:flex;align-items:center;gap:10px;
+    margin-top:2px;
+  }
+  .score-bar{
+    flex:1;height:6px;
+    border-radius:999px;
+    background:var(--line-soft);
+    overflow:hidden;position:relative;
+  }
+  .score-fill{
+    position:absolute;left:0;top:0;height:100%;
+    background:linear-gradient(90deg,var(--primary),var(--amber));
+    border-radius:999px;
+    transition:width .9s cubic-bezier(.2,.8,.2,1);
+  }
+  .score-fill.sage{background:linear-gradient(90deg,var(--sage-deep),var(--sage))}
+  .score-fill.muted{background:linear-gradient(90deg,#8a6f64,#c2a99a)}
+  .score-num{
+    font-family:var(--font-mono);
+    font-size:13px;font-weight:600;
+    color:var(--primary);
+    min-width:40px;text-align:right;
+  }
+  .style-stats{
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:0;
+    border-top:1px dashed var(--line);
+    padding-top:14px;
+  }
+  .stat{display:flex;flex-direction:column;gap:2px}
+  .stat-label{
+    font-size:10px;text-transform:uppercase;letter-spacing:.12em;
+    color:var(--fg-subtle);font-weight:500;
+  }
+  .stat-val{
+    font-family:var(--font-display);
+    font-size:20px;color:var(--primary);line-height:1.1;
+  }
+  .stat-val .delta{
+    font-family:var(--font-mono);
+    font-size:11px;font-weight:500;margin-left:4px;
+  }
+  .delta.up{color:var(--success)}
+  .delta.down{color:var(--danger)}
+
+  /* ============== AI EXPLANATION ============== */
+  .ai-section{
+    display:grid;
+    grid-template-columns:1.3fr 1fr;
+    gap:16px;
+    margin-bottom:32px;
+  }
+  .ai-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:24px 26px;
+    display:flex;flex-direction:column;gap:18px;
+  }
+  .ai-card.dark{
+    background:var(--primary);
+    color:var(--cream);
+    border-color:var(--primary);
+  }
+  .ai-card.dark .ai-head h3{color:#fff}
+  .ai-card.dark .ai-meta{color:rgba(245,239,230,.6)}
+  .ai-head{
+    display:flex;align-items:center;gap:10px;
+  }
+  .ai-icon{
+    width:32px;height:32px;border-radius:10px;
+    background:linear-gradient(135deg,var(--amber),var(--orange));
+    display:grid;place-items:center;color:var(--primary);
+    flex:none;
+  }
+  .ai-card.dark .ai-icon{
+    background:rgba(245,165,36,.18);
+    color:var(--amber);
+  }
+  .ai-head h3{
+    font-family:var(--font-display);
+    margin:0;
+    font-size:22px;
+    color:var(--primary);
+    line-height:1.1;
+  }
+  .ai-meta{
+    font-size:11px;color:var(--fg-subtle);
+    font-family:var(--font-mono);
+    text-transform:uppercase;letter-spacing:.08em;
+  }
+  .ai-summary{
+    font-family:var(--font-display);
+    font-size:19px;line-height:1.5;
+    color:#fff;
+    margin:0;
+    text-wrap:pretty;
+  }
+  .ai-summary em{
+    color:var(--amber);
+    font-style:normal;
+    background:linear-gradient(transparent 60%, rgba(245,165,36,.25) 60%);
+    padding:0 2px;
+  }
+  .ai-section-title{
+    font-size:11px;
+    text-transform:uppercase;letter-spacing:.14em;
+    color:var(--fg-subtle);
+    font-weight:600;
+    margin:0 0 10px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .ai-section-title .num{
+    width:18px;height:18px;border-radius:5px;
+    background:var(--cream);color:var(--primary);
+    font-family:var(--font-mono);font-weight:600;
+    display:grid;place-items:center;font-size:10px;
+    letter-spacing:0;
+  }
+  .action-list{
+    list-style:none;padding:0;margin:0;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .action-item{
+    display:flex;gap:12px;
+    padding:12px 14px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--cream-soft);
+    align-items:flex-start;
+  }
+  .action-num{
+    flex:none;
+    width:24px;height:24px;border-radius:7px;
+    background:var(--primary);color:#fff;
+    font-family:var(--font-mono);font-weight:600;
+    display:grid;place-items:center;font-size:11px;
+    margin-top:1px;
+  }
+  .action-item .at{
+    font-size:14px;color:var(--fg);line-height:1.45;
+  }
+  .action-item .at strong{color:var(--primary);font-weight:600}
+  .action-item .at span{
+    display:block;
+    font-size:12px;color:var(--fg-muted);
+    margin-top:2px;
+  }
+  .risk-list{
+    list-style:none;padding:0;margin:0;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .risk-item{
+    display:flex;gap:10px;font-size:13.5px;line-height:1.5;
+    padding:10px 12px;border-radius:10px;
+    background:rgba(220,38,38,.04);
+    border:1px solid rgba(220,38,38,.12);
+  }
+  .risk-icn{
+    flex:none;color:var(--danger);margin-top:2px;
+  }
+  .risk-item b{color:var(--primary);font-weight:600}
+
+  .tips-list{
+    display:flex;flex-direction:column;gap:8px;
+    list-style:none;padding:0;margin:0;
+  }
+  .tip-item{
+    display:flex;gap:10px;font-size:13px;line-height:1.5;
+    color:var(--fg);
+  }
+  .tip-bullet{
+    flex:none;width:6px;height:6px;border-radius:999px;
+    background:var(--amber);margin-top:7px;
+  }
+  .tip-item b{color:var(--primary);font-weight:600;margin-right:4px}
+
+  .style-tabs{
+    display:flex;gap:4px;
+    background:var(--cream);
+    border-radius:10px;padding:4px;
+    margin-bottom:14px;
+  }
+  .style-tab{
+    flex:1;
+    padding:7px 10px;
+    border-radius:7px;
+    font-size:12px;font-weight:500;
+    color:var(--fg-muted);
+    text-align:center;
+    transition:background .12s,color .12s;
+  }
+  .style-tab.active{background:#fff;color:var(--primary);box-shadow:var(--shadow-xs)}
+  .style-tab:hover:not(.active){color:var(--primary)}
+
+  /* ============== FACTORS CHART ============== */
+  .factors-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:24px 26px;
+  }
+  .factors-head{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;margin-bottom:18px;
+  }
+  .factors-head h3{
+    font-family:var(--font-display);
+    margin:0;font-size:22px;color:var(--primary);
+  }
+  .factors-legend{
+    display:flex;gap:14px;font-size:12px;color:var(--fg-muted);
+  }
+  .lg-dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  .lg-dot.boost{background:var(--sage-deep)}
+  .lg-dot.detr{background:#c47b6b}
+
+  .factors-grid{
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .factor-row{
+    display:grid;
+    grid-template-columns:200px 1fr 80px;
+    align-items:center;
+    gap:14px;
+    font-size:13px;
+    padding:7px 0;
+  }
+  .factor-row .fname{
+    color:var(--primary);font-weight:500;
+    display:flex;align-items:center;gap:8px;
+  }
+  .factor-row .fname .ficn{
+    color:var(--fg-faint);
+  }
+  .factor-bar-wrap{
+    height:18px;
+    position:relative;
+    background:linear-gradient(90deg,rgba(196,123,107,.06) 0%,rgba(196,123,107,.06) 50%,rgba(93,122,100,.06) 50%,rgba(93,122,100,.06) 100%);
+    border-radius:6px;
+  }
+  .factor-bar-wrap::before{
+    content:"";position:absolute;left:50%;top:0;bottom:0;
+    width:1px;background:var(--line);
+  }
+  .factor-bar{
+    position:absolute;top:3px;bottom:3px;
+    border-radius:4px;
+    transition:width .8s cubic-bezier(.2,.8,.2,1),left .8s cubic-bezier(.2,.8,.2,1);
+  }
+  .factor-bar.boost{background:linear-gradient(90deg,var(--sage),var(--sage-deep));left:50%}
+  .factor-bar.detr{background:linear-gradient(270deg,#c47b6b,#a55a47);right:50%}
+  .factor-val{
+    font-family:var(--font-mono);font-weight:600;font-size:13px;
+    text-align:right;
+  }
+  .factor-val.boost{color:var(--sage-deep)}
+  .factor-val.detr{color:#a55a47}
+
+  /* ============== EMPTY / LOADING STATES ============== */
+  .placeholder-banner{
+    background:var(--cream-soft);
+    border:1px dashed var(--primary-20);
+    border-radius:14px;
+    padding:18px 20px;
+    display:flex;align-items:center;gap:14px;
+    color:var(--primary);
+    font-size:14px;
+    margin-bottom:24px;
+  }
+  .placeholder-banner svg{flex:none;color:var(--orange)}
+  .placeholder-banner b{font-weight:600}
+
+  .loading-overlay{
+    position:absolute;inset:0;
+    background:rgba(255,255,255,.8);
+    backdrop-filter:blur(4px);
+    display:grid;place-items:center;
+    border-radius:18px;
+    z-index:5;
+  }
+  .loading-content{
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+  .spinner{
+    width:32px;height:32px;
+    border:3px solid var(--primary-10);
+    border-top-color:var(--primary);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{
+    font-size:13px;color:var(--fg-muted);
+    font-family:var(--font-mono);
+  }
+
+  /* skeleton states for results during loading */
+  .results-loading .style-card,
+  .results-loading .ai-card,
+  .results-loading .kpi,
+  .results-loading .factors-card{
+    position:relative;
+    pointer-events:none;
+  }
+  .skel{
+    background:linear-gradient(90deg,var(--line-soft) 0%,#fafafa 50%,var(--line-soft) 100%);
+    background-size:200% 100%;
+    animation:shimmer 1.4s linear infinite;
+    border-radius:6px;
+    color:transparent !important;
+  }
+  @keyframes shimmer{
+    0%{background-position:200% 0}
+    100%{background-position:-200% 0}
+  }
+
+  /* footer / meta */
+  .page-foot{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-top:8px;padding-top:24px;
+    border-top:1px solid var(--line);
+    font-size:12px;color:var(--fg-subtle);
+    font-family:var(--font-mono);
+  }
+  .page-foot a:hover{color:var(--primary)}
+
+  /* responsive */
+  @media (max-width:1100px){
+    .app{grid-template-columns:1fr}
+    .sidebar{display:none}
+    .results-grid{grid-template-columns:1fr 1fr}
+    .ai-section{grid-template-columns:1fr}
+    .kpis{grid-template-columns:1fr 1fr}
+    .search-row{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:640px){
+    .results-grid{grid-template-columns:1fr}
+    .kpis{grid-template-columns:1fr}
+    .search-row{grid-template-columns:1fr}
+    .page{padding:20px 16px 40px}
+    .topbar{padding:0 16px}
+  }
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef } = React;
+
+/* ---------- Tiny inline icons (Lucide-aligned) ---------- */
+const Ic = {
+  search:    (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+  pin:       (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
+  arrow:     (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
+  spark:     (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M9.94 14.06 5 19l5 5 4.94-4.94"/><path d="M14.5 9.5 19 5l-9 9-1 5 5-1z"/><path d="M20 3v4"/><path d="M22 5h-4"/></svg>,
+  layers:    (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m12.83 2.18-9.66 4.51a1 1 0 0 0 0 1.81l9.66 4.51a1 1 0 0 0 .84 0l9.66-4.51a1 1 0 0 0 0-1.81L13.67 2.18a1 1 0 0 0-.84 0Z"/><path d="m22 12.18-9.16 4.27a1 1 0 0 1-.84 0L2.83 12.18"/><path d="m22 17-9.16 4.27a1 1 0 0 1-.84 0L2.83 17"/></svg>,
+  home:      (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  chart:     (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 5-5"/></svg>,
+  building:  (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 14h.01"/></svg>,
+  bookmark:  (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>,
+  cog:       (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  bell:      (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
+  share:     (p) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
+  download:  (p) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+  alert:     (p) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  info:      (p) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
+  star:      (p) => <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M12 2 15.09 8.26 22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>,
+  trend:     (p) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+};
+
+const Sparkline = ({ points, stroke="#513126" }) => {
+  // points: array of numbers 0..1
+  const w=64,h=24;
+  const path = points.map((p,i)=>{
+    const x = (i/(points.length-1))*w;
+    const y = h - p*(h-2) - 1;
+    return `${i===0?'M':'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return (
+    <svg className="kpi-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+      <path d={path} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
+    </svg>
+  );
+};
+
+/* ---------- Demo data for ZIP 02135 (Allston, Boston) ---------- */
+const DEMO_DATA = {
+  zip: "02135",
+  city: "Allston",
+  metro: "Boston, MA",
+  asOf: "May 4, 2026",
+  sample: 612,
+  median: { dom: 24, ppsf: 712, listPrice: 689000, soldRatio: 1.018 },
+  kpis: [
+    { label: "Median Days on Market", value: "24", unit: "days", delta: "−6.2%", trend: "down", spark: [.7,.66,.74,.6,.55,.5,.42,.38,.4,.35,.3,.28], color:"var(--success)" },
+    { label: "Median $/sqft",         value: "$712", delta: "+4.1%", trend: "up",   spark: [.4,.42,.45,.5,.48,.55,.6,.63,.7,.74,.78,.82], color:"var(--success)" },
+    { label: "Active Listings",        value: "187", delta: "+12",   trend: "up",   spark: [.5,.48,.5,.55,.58,.6,.65,.7,.72,.74,.78,.8], color:"var(--success)" },
+    { label: "Stage-to-Sell Lift",     value: "+18", unit:"%", delta: "vs. unstaged", trend: "flat", spark: [.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5], color:"var(--fg-muted)" },
+  ],
+  styles: [
+    {
+      id: "modern-min",
+      rank: 1,
+      name: "Modern Minimalist",
+      photo: "assets/style-modern.png",
+      tags: ["Light woods", "Neutral palette", "Open volumes"],
+      score: 92,
+      badge: "Top match",
+      stats: {
+        dom: { val: "19", unit: "days", delta: "−21%", direction: "down" },
+        ppsf:{ val: "$748",         delta: "+5.1%", direction: "up" },
+        sample: 184,
+        confidence: "High",
+      },
+    },
+    {
+      id: "scandi",
+      rank: 2,
+      name: "Scandinavian",
+      photo: "assets/style-scandi.jpg",
+      tags: ["Warm minimal", "Functional", "Pale oak"],
+      score: 87,
+      stats: {
+        dom: { val: "22", unit: "days", delta: "−8.3%", direction: "down" },
+        ppsf:{ val: "$731",         delta: "+2.7%", direction: "up" },
+        sample: 96,
+        confidence: "High",
+      },
+    },
+    {
+      id: "contemporary",
+      rank: 3,
+      name: "Contemporary",
+      photo: "assets/style-contemporary.png",
+      tags: ["Mid-century cues", "Layered texture", "Gallery wall"],
+      score: 81,
+      stats: {
+        dom: { val: "26", unit: "days", delta: "+8.3%", direction: "up" },
+        ppsf:{ val: "$709",         delta: "−0.4%", direction: "down" },
+        sample: 142,
+        confidence: "Medium",
+      },
+    },
+  ],
+  ai: {
+    model: "edensign-atlas v3.2",
+    runtime: "1.42s",
+    summary: "Allston (02135) leans heavily toward <em>Modern Minimalist</em> staging — light wood, neutral palette, and open sightlines beat the local median by 5 days on market and $36/sqft. The buyer cohort is rental-conversion graduates and grad-student-adjacent professionals; warm oak Scandinavian is a strong runner-up but underperforms on sub-700sqft units.",
+    actions: [
+      { title: "Lead with Modern Minimalist for 1BR / studio listings", note: "94% of <700sqft sales staged this style cleared in <21 days." },
+      { title: "Reserve Scandinavian for 2BR family-conversion units",  note: "Best fit for tree-lined streets near Brighton border (Comm Ave, Brighton Ave)." },
+      { title: "Avoid heavy Contemporary in walk-up triple-deckers",   note: "Layered texture reads cluttered in narrow rooms; use only on parlor-floor units." },
+      { title: "Day-to-dusk on north-facing kitchens",                  note: "Allston housing stock is light-poor on the north — dusk renders close 1.7× more tours." },
+    ],
+    risks: [
+      { title: "Sample bias on <500sqft", detail: "Only 38 micro-studios in the training set — rec confidence drops to Medium below 500sqft." },
+      { title: "Rent-control overlap",     detail: "Some 02135 parcels fall under MA rent-stabilization watch list; staging recs assume sale, not lease." },
+      { title: "Seasonality (Sep moves)",  detail: "Allston's Sep 1st turnover spikes inventory ~2.4×; rec scores re-weight automatically through Aug." },
+    ],
+    tips: {
+      "modern-min": [
+        { title: "Wood tone", body: "White oak or pale ash — avoid walnut and dark teak." },
+        { title: "Lighting",  body: "3000K, layered: floor + table + accent. Skip overhead-only." },
+        { title: "Art",       body: "Single oversized abstract piece per main wall, framed in matte black or unfinished wood." },
+        { title: "Textiles",  body: "Bouclé and natural linen in oat / off-white. One muted sage throw for warmth." },
+      ],
+      "scandi": [
+        { title: "Furniture", body: "Low-slung pale oak, exposed legs, fabric upholstery." },
+        { title: "Greens",    body: "One olive tree or fiddle-leaf — no more than two plants per room." },
+        { title: "Floors",    body: "Show original hardwood. Avoid jute or sisal — reads beachy, not Nordic." },
+      ],
+      "contemporary": [
+        { title: "Anchors",   body: "One sculptural piece per room; chrome or brushed brass legs." },
+        { title: "Color",     body: "Warm-charcoal accent wall on main living wall only." },
+        { title: "Caution",   body: "Do not stack textures — pick rug OR throw OR pillows, not all three." },
+      ],
+    },
+  },
+  factors: [
+    { name: "Median household income",  type: "boost", weight: 0.78, note: "+12.3% vs. metro median" },
+    { name: "Walk score (88)",            type: "boost", weight: 0.71, note: "Top quartile" },
+    { name: "Renter→buyer conversion",     type: "boost", weight: 0.62, note: "Strong move-up cohort" },
+    { name: "Light wood comp velocity",    type: "boost", weight: 0.55, note: "Last 90d active" },
+    { name: "T-line proximity (Green B)",  type: "boost", weight: 0.49, note: "<8min walk median" },
+    { name: "Building age (median 1924)",  type: "detr", weight: 0.41, note: "Plaster + low ceilings" },
+    { name: "North-facing exposure (38%)", type: "detr", weight: 0.34, note: "Light-poor units" },
+    { name: "Triple-decker layout",        type: "detr", weight: 0.28, note: "Narrow rooms" },
+    { name: "Rent-stabilization overlap",   type: "detr", weight: 0.18, note: "Some parcels flagged" },
+  ],
+};
+
+/* ---------- Components ---------- */
+
+function Sidebar() {
+  return (
+    <aside className="sidebar">
+      <div className="brand">
+        <div className="brand-mark">e</div>
+        <div>
+          <div className="brand-name">Edensign</div>
+          <div className="brand-sub">Style Atlas BI</div>
+        </div>
+      </div>
+
+      <nav className="nav-section">
+        <div className="nav-label">Workspace</div>
+        <a className="nav-item active"><Ic.search className="icn"/> Style Atlas</a>
+        <a className="nav-item"><Ic.layers className="icn"/> Style Library</a>
+        <a className="nav-item"><Ic.chart className="icn"/> Market Trends</a>
+        <a className="nav-item"><Ic.building className="icn"/> Listings <span className="pill-new">12</span></a>
+      </nav>
+
+      <nav className="nav-section">
+        <div className="nav-label">Account</div>
+        <a className="nav-item"><Ic.bookmark className="icn"/> Saved ZIPs</a>
+        <a className="nav-item"><Ic.bell className="icn"/> Alerts</a>
+        <a className="nav-item"><Ic.cog className="icn"/> Settings</a>
+      </nav>
+
+      <div className="sidebar-foot">
+        <div className="org-card">
+          <div className="org-avatar">JL</div>
+          <div className="org-meta">
+            <strong>Jordan Lee</strong>
+            <span>Berkshire Hathaway · NE</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function Topbar({ zip }) {
+  return (
+    <div className="topbar">
+      <div className="crumbs">
+        <span>Workspace</span>
+        <span className="sep">/</span>
+        <span>Style Atlas</span>
+        <span className="sep">/</span>
+        <strong>ZIP {zip}</strong>
+      </div>
+      <div className="topbar-right">
+        <div className="api-status">
+          <span className="api-dot"/>
+          <span>API · 99.97% · 1.4s p50</span>
+        </div>
+        <button className="icon-btn" title="Notifications"><Ic.bell/></button>
+        <button className="icon-btn" title="Settings"><Ic.cog/></button>
+      </div>
+    </div>
+  );
+}
+
+function SearchPanel({ zip, setZip, propertyType, setPropertyType, sqft, setSqft, onSubmit, loading, lastZips }) {
+  const submit = (e) => { e?.preventDefault?.(); onSubmit(); };
+  return (
+    <form className="search-card" onSubmit={submit}>
+      <div className="search-row">
+        <div className="field">
+          <label>ZIP code</label>
+          <div className="input-wrap">
+            <Ic.pin className="ipre" width="16" height="16"/>
+            <input
+              className="input zip with-pre"
+              placeholder="02135"
+              value={zip}
+              maxLength={5}
+              onChange={(e)=>setZip(e.target.value.replace(/\D/g,"").slice(0,5))}
+            />
+          </div>
+        </div>
+        <div className="field">
+          <label>Property type</label>
+          <select className="select" value={propertyType} onChange={(e)=>setPropertyType(e.target.value)}>
+            <option>Condo / Apartment</option>
+            <option>Single-family</option>
+            <option>Multi-family</option>
+            <option>Townhouse</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>Square footage</label>
+          <select className="select" value={sqft} onChange={(e)=>setSqft(e.target.value)}>
+            <option>500 – 800 sqft</option>
+            <option>800 – 1,200 sqft</option>
+            <option>1,200 – 1,800 sqft</option>
+            <option>1,800+ sqft</option>
+          </select>
+        </div>
+        <button className="submit-btn" disabled={loading || zip.length!==5}>
+          {loading ? <>Analyzing…</> : <>Run Atlas <Ic.arrow/></>}
+        </button>
+      </div>
+
+      <div className="search-foot">
+        <span style={{display:"inline-flex",alignItems:"center",gap:8}}>
+          <Ic.spark width="14" height="14" style={{color:"var(--orange)"}}/>
+          <b style={{color:"var(--primary)",fontWeight:500}}>Atlas v3.2</b>
+          analyzes 4.2M listings + 36mo of MLS comps to recommend top-3 staging styles.
+        </span>
+        <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500}}>Recent</span>
+          {lastZips.map(z => (
+            <button key={z} type="button" className="recent" onClick={()=>{ setZip(z); }}>{z}</button>
+          ))}
+        </span>
+      </div>
+    </form>
+  );
+}
+
+function KpiStrip({ kpis, loading }) {
+  return (
+    <section className="kpis">
+      {kpis.map((k,i)=>(
+        <div className="kpi" key={i}>
+          <div className="kpi-label">{k.label}</div>
+          <div className={loading?"kpi-value skel":"kpi-value"}>
+            {k.value}{k.unit && <span className="unit">{k.unit}</span>}
+          </div>
+          <div className={`kpi-delta ${k.trend}`}>
+            {k.trend==="up"   && <Ic.trend/>}
+            {k.trend==="down" && <Ic.trend style={{transform:"scaleY(-1)"}}/>}
+            {k.delta}
+          </div>
+          <Sparkline points={k.spark} stroke={k.color}/>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function StyleCard({ s, selected, onSelect, loading }) {
+  const dirCls = s.stats.dom.direction;
+  const ppsfDir = s.stats.ppsf.direction;
+  return (
+    <article className={`style-card ${selected?"selected":""}`} onClick={()=>onSelect(s.id)}>
+      <div className="style-rank">
+        <Ic.star className="star"/> #{s.rank} · {s.stats.confidence}
+      </div>
+      {s.badge && <div className="style-badge">{s.badge}</div>}
+      <img className="style-photo" src={s.photo} alt={s.name} loading="lazy"/>
+      <div className="style-body">
+        <div>
+          <h4 className="style-name">{s.name}</h4>
+          <div className="style-tags" style={{marginTop:6}}>
+            {s.tags.map(t => <span key={t} className="tag">{t}</span>)}
+          </div>
+        </div>
+
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+            <span style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500}}>Match score</span>
+            <span style={{fontSize:11,color:"var(--fg-muted)",fontFamily:"var(--font-mono)"}}>n = {s.stats.sample}</span>
+          </div>
+          <div className="score-row">
+            <div className="score-bar">
+              <div
+                className={`score-fill ${s.rank>=3?"muted":s.rank===2?"sage":""}`}
+                style={{ width: loading?"0%": `${s.score}%` }}
+              />
+            </div>
+            <div className="score-num">{loading?"·":s.score}</div>
+          </div>
+        </div>
+
+        <div className="style-stats">
+          <div className="stat">
+            <span className="stat-label">Days on market</span>
+            <span className="stat-val">
+              {s.stats.dom.val}<span className={`delta ${dirCls==="down"?"up":"down"}`}>{s.stats.dom.delta}</span>
+            </span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Median $/sqft</span>
+            <span className="stat-val">
+              {s.stats.ppsf.val}<span className={`delta ${ppsfDir==="up"?"up":"down"}`}>{s.stats.ppsf.delta}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function AIExplanation({ ai, activeStyle, setActiveStyle, styles }) {
+  return (
+    <section className="ai-section">
+      <div className="ai-card dark">
+        <div className="ai-head">
+          <div className="ai-icon"><Ic.spark/></div>
+          <div>
+            <h3>Executive summary</h3>
+            <div className="ai-meta">{ai.model} · generated in {ai.runtime}</div>
+          </div>
+        </div>
+        <p className="ai-summary" dangerouslySetInnerHTML={{__html: ai.summary}}/>
+
+        <div>
+          <h5 className="ai-section-title" style={{color:"rgba(245,239,230,.6)"}}>
+            <span className="num" style={{background:"rgba(245,239,230,.12)",color:"#fff"}}>1</span>
+            Action plan
+          </h5>
+          <ul className="action-list">
+            {ai.actions.map((a,i)=>(
+              <li key={i} className="action-item" style={{background:"rgba(245,239,230,.04)",border:"1px solid rgba(245,239,230,.1)"}}>
+                <div className="action-num" style={{background:"var(--amber)",color:"var(--primary)"}}>{i+1}</div>
+                <div className="at" style={{color:"#fff"}}>
+                  <strong style={{color:"#fff"}}>{a.title}</strong>
+                  <span style={{color:"rgba(245,239,230,.6)"}}>{a.note}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="ai-card">
+        <div>
+          <h5 className="ai-section-title"><span className="num">2</span>Risk notes</h5>
+          <ul className="risk-list">
+            {ai.risks.map((r,i)=>(
+              <li key={i} className="risk-item">
+                <Ic.alert className="risk-icn"/>
+                <div><b>{r.title}.</b> {r.detail}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <h5 className="ai-section-title"><span className="num">3</span>Style-specific tips</h5>
+          <div className="style-tabs">
+            {styles.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                className={`style-tab ${activeStyle===s.id?"active":""}`}
+                onClick={()=>setActiveStyle(s.id)}
+              >{s.name}</button>
+            ))}
+          </div>
+          <ul className="tips-list">
+            {(ai.tips[activeStyle]||[]).map((t,i)=>(
+              <li className="tip-item" key={i}>
+                <span className="tip-bullet"/>
+                <div><b>{t.title}.</b> {t.body}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FactorsChart({ factors }) {
+  const maxW = useMemo(() => Math.max(...factors.map(f=>f.weight)), [factors]);
+  // Sort: boosters descending, then detractors descending
+  const sorted = useMemo(() => {
+    const b = factors.filter(f=>f.type==="boost").sort((a,c)=>c.weight-a.weight);
+    const d = factors.filter(f=>f.type==="detr") .sort((a,c)=>c.weight-a.weight);
+    return [...b, ...d];
+  }, [factors]);
+
+  return (
+    <section className="factors-card">
+      <div className="factors-head">
+        <div>
+          <h3>Boosters & detractors</h3>
+          <div style={{fontSize:12,color:"var(--fg-muted)",marginTop:4}}>What's pulling the recommendation up — and what's holding it back.</div>
+        </div>
+        <div className="factors-legend">
+          <span><span className="lg-dot boost"/>Booster</span>
+          <span><span className="lg-dot detr"/>Detractor</span>
+        </div>
+      </div>
+
+      <div className="factors-grid">
+        {sorted.map((f,i)=>{
+          const pct = (f.weight / maxW) * 50; // percent of half-bar
+          return (
+            <div className="factor-row" key={i}>
+              <div className="fname">
+                <Ic.info className="ficn"/>
+                {f.name}
+                <span style={{fontSize:11,color:"var(--fg-faint)",fontWeight:400,marginLeft:4}}>· {f.note}</span>
+              </div>
+              <div className="factor-bar-wrap">
+                <div
+                  className={`factor-bar ${f.type}`}
+                  style={
+                    f.type==="boost"
+                      ? { left:"50%", width:`${pct}%` }
+                      : { right:"50%", width:`${pct}%` }
+                  }
+                />
+              </div>
+              <div className={`factor-val ${f.type}`}>
+                {f.type==="boost"?"+":"−"}{f.weight.toFixed(2)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ---------- App ---------- */
+function App(){
+  const [zip, setZip] = useState("02135");
+  const [propertyType, setPropertyType] = useState("Condo / Apartment");
+  const [sqft, setSqft] = useState("500 – 800 sqft");
+  const [loading, setLoading] = useState(false);
+  const [hasResults, setHasResults] = useState(true);
+  const [activeStyleId, setActiveStyleId] = useState("modern-min");
+  const [selectedCard, setSelectedCard] = useState("modern-min");
+  const data = DEMO_DATA;
+
+  const runAtlas = () => {
+    setLoading(true);
+    setHasResults(true);
+    // simulate API
+    setTimeout(()=>{
+      setLoading(false);
+      setActiveStyleId("modern-min");
+      setSelectedCard("modern-min");
+    }, 1400);
+  };
+
+  const onSelectCard = (id) => {
+    setSelectedCard(id);
+    setActiveStyleId(id);
+    // smooth-scroll to AI explanation
+    document.querySelector("#ai-section")?.scrollIntoView?.({ behavior:"smooth", block:"start" });
+  };
+
+  return (
+    <div className="app">
+      <Sidebar/>
+      <main>
+        <Topbar zip={zip}/>
+        <div className="page">
+
+          <header className="page-head">
+            <div>
+              <h1 className="page-title">Style Atlas</h1>
+              <p className="page-sub">Find the staging styles that move listings fastest in your market — backed by 36 months of MLS comps and 4.2M staged photos.</p>
+            </div>
+            <div className="head-actions">
+              <button className="btn ghost"><Ic.share/> Share</button>
+              <button className="btn ghost"><Ic.download/> Export PDF</button>
+              <button className="btn amber"><Ic.spark/> Open in Studio</button>
+            </div>
+          </header>
+
+          <SearchPanel
+            zip={zip} setZip={setZip}
+            propertyType={propertyType} setPropertyType={setPropertyType}
+            sqft={sqft} setSqft={setSqft}
+            onSubmit={runAtlas}
+            loading={loading}
+            lastZips={["02116","02118","02446","02139"]}
+          />
+
+          {hasResults && (
+            <>
+              <div className="results-head">
+                <div className="market-summary">
+                  <div className="market-eyebrow">Market snapshot</div>
+                  <h2 className="market-title">{data.city}, {data.metro} · {data.zip}</h2>
+                  <div className="market-meta">
+                    <span><b>{data.sample.toLocaleString()}</b> comparable sales</span>
+                    <span className="meta-sep">·</span>
+                    <span>Trailing <b>36 months</b></span>
+                    <span className="meta-sep">·</span>
+                    <span>As of <b>{data.asOf}</b></span>
+                    <span className="meta-sep">·</span>
+                    <span>Confidence <b style={{color:"var(--success)"}}>High</b></span>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button className="btn ghost"><Ic.bookmark/> Save ZIP</button>
+                  <button className="btn primary">Compare ZIPs</button>
+                </div>
+              </div>
+
+              <KpiStrip kpis={data.kpis} loading={loading}/>
+
+              <div style={{position:"relative"}} className={loading?"results-loading":""}>
+                <section className="results-grid">
+                  {data.styles.map(s => (
+                    <StyleCard
+                      key={s.id}
+                      s={s}
+                      selected={selectedCard===s.id}
+                      onSelect={onSelectCard}
+                      loading={loading}
+                    />
+                  ))}
+                </section>
+
+                <div id="ai-section">
+                  <AIExplanation
+                    ai={data.ai}
+                    activeStyle={activeStyleId}
+                    setActiveStyle={setActiveStyleId}
+                    styles={data.styles}
+                  />
+                </div>
+
+                <FactorsChart factors={data.factors}/>
+
+                {loading && (
+                  <div className="loading-overlay">
+                    <div className="loading-content">
+                      <div className="spinner"/>
+                      <div className="loading-text">Atlas v3.2 · scoring 612 comps…</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <footer className="page-foot">
+                <span>Atlas v3.2 · Last refreshed {data.asOf} · Latency 1.42s</span>
+                <span>Data: MLS PIN, FRED, Edensign Stage-Sample 4.2M</span>
+              </footer>
+            </>
+          )}
+
+        </div>
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

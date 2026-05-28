@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Data (不要把抓的数据传到git)
+data/
+*.csv
+*.parquet
+
+# 训练好的模型文件 (大型二进制，不进 git)
+models/
+*.joblib
+cv-models/artifacts/*.npz
+
+# Docker
+pgdata/
+
+# OS
+.DS_Store
+Thumbs.db
+*.png
+*.jpg
+*.jpeg
