@@ -9,6 +9,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
+import sys
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -17,6 +20,24 @@ import httpx
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+# Allow importing from the BI app when running inside the repo
+_bi_root = Path(__file__).resolve().parent.parent.parent
+if str(_bi_root) not in sys.path:
+    sys.path.insert(0, str(_bi_root))
+
+from app.services.listing_writer import build_listing_copy  # noqa: E402
+
+
+def _zipcode_from(address: str | None, zipcode: str | None) -> str | None:
+    """Return an explicit zipcode, or extract a 5-digit US zip from address."""
+    if zipcode and len(zipcode) == 5 and zipcode.isdigit():
+        return zipcode
+    if address:
+        m = re.search(r"\b(\d{5})\b", address)
+        if m:
+            return m.group(1)
+    return None
 
 BI_BASE = os.getenv("BI_BASE", "http://localhost:8000")
 HOME_REPORT_BASE = os.getenv("HOME_REPORT_BASE", "http://localhost:8001")
@@ -226,25 +247,23 @@ async def pipeline_run(
                 return {"error": r.text[:300]}
             return r.json()
 
+    resolved_zip = _zipcode_from(address, zipcode)
+
     async def call_bi() -> dict[str, Any]:
+        if not resolved_zip:
+            return {"error": "cannot determine zipcode from address"}
         async with httpx.AsyncClient(timeout=60.0) as client:
-            params: dict[str, Any] = {"objective": "balanced", "scoring_mode": "hybrid"}
-            if address:
-                params["address"] = address
-            else:
-                params["zipcode"] = zipcode
+            params: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "hybrid"}
             r = await client.get(f"{BI_BASE}/analyze/by-zipcode", params=params)
             if r.status_code != 200:
                 return {"error": r.text[:300]}
             return r.json()
 
     async def call_bi_explain() -> dict[str, Any]:
+        if not resolved_zip:
+            return {"error": "cannot determine zipcode from address"}
         async with httpx.AsyncClient(timeout=90.0) as client:
-            payload: dict[str, Any] = {"objective": "balanced", "scoring_mode": "hybrid"}
-            if address:
-                payload["address"] = address
-            else:
-                payload["zipcode"] = zipcode
+            payload: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "hybrid"}
             r = await client.post(f"{BI_BASE}/analyze/explain/by-zipcode", json=payload)
             if r.status_code != 200:
                 return {"error": r.text[:300]}
@@ -280,6 +299,7 @@ async def pipeline_run(
             agent_name=agent_name,
             agent_contact=agent_contact,
             additional_requirements=home_report_highlights,
+            market_data=bi_analysis if isinstance(bi_analysis, dict) and "error" not in bi_analysis else None,
         )
     finally:
         bi_explain = await bi_explain_task
@@ -333,7 +353,7 @@ def _extract_home_report_highlights(home_report: Any) -> str | None:
 
 
 # ============================================================
-# Listing composer — delegates to bi /listing/write
+# Listing composer — calls build_listing_copy directly
 # ============================================================
 async def _compose_listing_via_bi(
     address: str | None,
@@ -347,42 +367,27 @@ async def _compose_listing_via_bi(
     agent_name: str | None = None,
     agent_contact: str | None = None,
     additional_requirements: str | None = None,
+    market_data: dict | None = None,
 ) -> str:
-    """Route listing generation through the bi listing writer (port 8000).
-
-    Text-only: images are not re-sent here because home-report-ai has already
-    assessed every photo with VLM and the highlights are passed via
-    additional_requirements, which is faster and avoids duplicate image tokens.
-    """
     style = (top_style_data.get("style") if top_style_data else None) or "Transitional"
     street_address = address or zipcode or ""
-
-    payload: dict = {
-        "style": style,
-        "street_address": street_address,
-        "property_type": property_type,
-    }
-    if address:
-        payload["address"] = address
-    elif zipcode:
-        payload["zipcode"] = zipcode
-    if bedrooms is not None:   payload["bedrooms"] = bedrooms
-    if bathrooms is not None:  payload["bathrooms"] = bathrooms
-    if sqft is not None:       payload["sqft"] = sqft
-    if listing_price is not None: payload["listing_price"] = listing_price
-    if agent_name:             payload["agent_name"] = agent_name
-    if agent_contact:          payload["agent_contact"] = agent_contact
-    if additional_requirements: payload["additional_requirements"] = additional_requirements
-
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        try:
-            r = await client.post(f"{BI_BASE}/listing/write", json=payload)
-            if r.status_code != 200:
-                return f"[listing_error: {r.text[:200]}]"
-            data = r.json()
-            return data.get("full_body") or "\n\n".join(data.get("paragraphs", []))
-        except Exception as e:
-            return f"[listing_exception: {str(e)[:200]}]"
+    try:
+        result = await build_listing_copy(
+            style=style,
+            street_address=street_address,
+            bedrooms=bedrooms,
+            bathrooms=bathrooms,
+            sqft=sqft,
+            property_type=property_type,
+            agent_name=agent_name,
+            agent_contact=agent_contact,
+            listing_price=listing_price,
+            additional_requirements=additional_requirements,
+            market_data=market_data,
+        )
+        return result.get("full_body") or "\n\n".join(result.get("paragraphs", []))
+    except Exception as e:
+        return f"[listing_error: {str(e)[:200]}]"
 
 
 if __name__ == "__main__":
