@@ -18,6 +18,7 @@ if str(_scripts) not in sys.path:
 from db_dsn import get_db_dsn  # noqa: E402
 from app.services.gpt_explainer import explain_analysis_with_openai  # noqa: E402
 from app.services.zipcode_analyzer import analyze_zipcode  # noqa: E402
+from app.services.listing_writer import build_listing_copy  # noqa: E402
 
 
 @asynccontextmanager
@@ -141,3 +142,25 @@ async def analyze_and_explain_by_zipcode(payload: ExplainByZipcodeRequest) -> di
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Explain failed: {e}") from e
+
+
+class ListingWriteRequest(BaseModel):
+    style: str
+    street_address: str
+    property_type: str = "residential"
+    bedrooms: int | None = None
+    bathrooms: float | None = None
+    sqft: int | None = None
+    listing_price: int | None = None
+    agent_name: str | None = None
+    agent_contact: str | None = None
+    additional_requirements: str | None = None
+    market_data: dict[str, Any] | None = None
+
+
+@app.post("/listing/write")
+async def listing_write(payload: ListingWriteRequest) -> dict[str, Any]:
+    try:
+        return await build_listing_copy(**payload.model_dump())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
