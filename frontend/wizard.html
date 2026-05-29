@@ -959,7 +959,7 @@ function fmtRoom(r) {
   return (r || '').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
 
-function PhotoUpload({files, setFiles, location, setLocation, onRun, running,
+function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcode, onRun, running,
                       classificationResult, classificationLoading, onClassify, onReview,
                       bedrooms, setBedrooms, bathrooms, setBathrooms, sqft, setSqft,
                       propertyType, setPropertyType, listingPrice, setListingPrice,
@@ -982,7 +982,8 @@ function PhotoUpload({files, setFiles, location, setLocation, onRun, running,
     onRemoveFile?.();
   };
   const locTrim = location.trim();
-  const canRun = files.length > 0 && locTrim.length >= 6 && !!classificationResult;
+  const zipTrim = (zipcode||"").trim();
+  const canRun = files.length > 0 && (locTrim.length >= 6 || (zipTrim.length === 5 && /^\d{5}$/.test(zipTrim))) && !!classificationResult;
 
   return (
     <div className="search-card">
@@ -1045,15 +1046,28 @@ function PhotoUpload({files, setFiles, location, setLocation, onRun, running,
       )}
       {!readOnly && (
         <div className="wizard-form-row" style={{gridTemplateColumns:"1fr auto"}}>
-          <div className="field">
-            <label>Address</label>
-            <input
-              className="input"
-              type="text"
-              placeholder="20 Allston St, Boston MA"
-              value={location}
-              onChange={(e)=>setLocation(e.target.value)}
-            />
+          <div style={{display:"flex",gap:8}}>
+            <div className="field" style={{flex:1}}>
+              <label>Address</label>
+              <input
+                className="input"
+                type="text"
+                placeholder="484 Second St, Cambridge MA"
+                value={location}
+                onChange={(e)=>setLocation(e.target.value)}
+              />
+            </div>
+            <div className="field" style={{width:90}}>
+              <label>ZIP Code <span style={{color:"var(--orange)"}}>*</span></label>
+              <input
+                className="input"
+                type="text"
+                placeholder="02139"
+                maxLength={5}
+                value={zipcode||""}
+                onChange={(e)=>setZipcode(e.target.value.replace(/\D/g,"").slice(0,5))}
+              />
+            </div>
           </div>
           <button className="submit-btn" disabled={!canRun || running} onClick={onRun}
             title={!classificationResult ? "Classify rooms first" : ""}>
@@ -1759,6 +1773,7 @@ function App() {
   const [page, setPage] = useState("wizard");
   const [files, setFiles] = useState([]);
   const [location, setLocation] = useState("");        // property address
+  const [zipcode, setZipcode] = useState("");
   const [bedrooms, setBedrooms] = useState("");
   const [bathrooms, setBathrooms] = useState("");
   const [sqft, setSqft] = useState("");
@@ -1806,6 +1821,8 @@ function App() {
       const form = new FormData();
       const locTrim = location.trim();
       form.append("address", locTrim);
+      const zipTrim = zipcode.trim();
+      if (zipTrim.length === 5 && /^\d{5}$/.test(zipTrim)) form.append("zipcode", zipTrim);
       if (bedrooms !== "") form.append("bedrooms", bedrooms);
       if (bathrooms !== "") form.append("bathrooms", bathrooms);
       if (sqft !== "") form.append("sqft", sqft);
@@ -1825,7 +1842,7 @@ function App() {
       setResult(data);
       uploadPhotos(files, stagingBase).then(photoUrls =>
         saveSubmission(
-          {address:location.trim(), bedrooms, bathrooms, sqft, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
+          {address:location.trim(), zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
           data
         ).then(id => { if (id) setSubmissionId(id); })
       );
@@ -1894,7 +1911,7 @@ function App() {
 
           <PhotoUpload
             files={files} setFiles={setFiles}
-            location={location} setLocation={setLocation}
+            location={location} setLocation={setLocation} zipcode={zipcode} setZipcode={setZipcode}
             onRun={runPipeline} running={running}
             classificationResult={classificationResult}
             classificationLoading={classificationLoading}
@@ -1989,7 +2006,7 @@ function App() {
               <ListingDisplay text={result.listing_text}/>
 
               <div style={{marginTop:32,display:"flex",justifyContent:"center"}}>
-                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);}}>
+                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setZipcode("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);}}>
                   ← Start over
                 </button>
               </div>
