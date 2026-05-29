@@ -1837,7 +1837,6 @@ function App() {
         throw new Error(`HTTP ${r.status}: ${t.slice(0,300)}`);
       }
       const data = await r.json();
-      console.log("[DEBUG] pipeline response:", {zip: data.zipcode, bi_styles: data.bi_analysis?.recommended_styles?.length, bi_error: data.bi_analysis?.error, has_llm: !!data.bi_explain?.llm, listing_len: data.listing_text?.length});
       setApiOk(true);
       setProgressStep(4);
       setResult(data);
@@ -1853,7 +1852,6 @@ function App() {
       try {
         const llm = data.bi_explain?.llm || null;
         const m = mapAnalysis(data.bi_analysis, llm);
-        console.log("[DEBUG] mapAnalysis output:", {styles_count: m.styles?.length, zip: m.zip, city: m.city, kpis_count: m.kpis?.length});
         setMapped(m);
         setActiveStyleId(m.styles[0]?.id || "");
         setSelectedCard(m.styles[0]?.id || "");
