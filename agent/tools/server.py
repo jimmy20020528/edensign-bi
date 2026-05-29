@@ -10,8 +10,6 @@ import asyncio
 import logging
 import os
 import re
-import sys
-from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -20,13 +18,6 @@ import httpx
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-
-# Allow importing from the BI app when running inside the repo
-_bi_root = Path(__file__).resolve().parent.parent.parent
-if str(_bi_root) not in sys.path:
-    sys.path.insert(0, str(_bi_root))
-
-from app.services.listing_writer import build_listing_copy  # noqa: E402
 
 
 def _zipcode_from(address: str | None, zipcode: str | None) -> str | None:
@@ -353,7 +344,7 @@ def _extract_home_report_highlights(home_report: Any) -> str | None:
 
 
 # ============================================================
-# Listing composer — calls build_listing_copy directly
+# Listing composer — delegates to bi /listing/write
 # ============================================================
 async def _compose_listing_via_bi(
     address: str | None,
@@ -371,23 +362,28 @@ async def _compose_listing_via_bi(
 ) -> str:
     style = (top_style_data.get("style") if top_style_data else None) or "Transitional"
     street_address = address or zipcode or ""
-    try:
-        result = await build_listing_copy(
-            style=style,
-            street_address=street_address,
-            bedrooms=bedrooms,
-            bathrooms=bathrooms,
-            sqft=sqft,
-            property_type=property_type,
-            agent_name=agent_name,
-            agent_contact=agent_contact,
-            listing_price=listing_price,
-            additional_requirements=additional_requirements,
-            market_data=market_data,
-        )
-        return result.get("full_body") or "\n\n".join(result.get("paragraphs", []))
-    except Exception as e:
-        return f"[listing_error: {str(e)[:200]}]"
+    payload: dict = {
+        "style": style,
+        "street_address": street_address,
+        "property_type": property_type,
+        "bedrooms": bedrooms,
+        "bathrooms": bathrooms,
+        "sqft": sqft,
+        "listing_price": listing_price,
+        "agent_name": agent_name,
+        "agent_contact": agent_contact,
+        "additional_requirements": additional_requirements,
+        "market_data": market_data,
+    }
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            r = await client.post(f"{BI_BASE}/listing/write", json=payload)
+            if r.status_code != 200:
+                return f"[listing_error: {r.text[:200]}]"
+            data = r.json()
+            return data.get("full_body") or "\n\n".join(data.get("paragraphs", []))
+        except Exception as e:
+            return f"[listing_exception: {str(e)[:200]}]"
 
 
 if __name__ == "__main__":
