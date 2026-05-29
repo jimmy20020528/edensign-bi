@@ -30,6 +30,25 @@ def _zipcode_from(address: str | None, zipcode: str | None) -> str | None:
             return m.group(1)
     return None
 
+
+async def _geocode_zipcode(address: str) -> str | None:
+    """Call Census Bureau geocoder to resolve a free-form address → zipcode."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(
+                "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress",
+                params={"address": address, "benchmark": "2020", "format": "json"},
+            )
+            if r.status_code != 200:
+                return None
+            matches = r.json().get("result", {}).get("addressMatches", [])
+            if not matches:
+                return None
+            z = str(matches[0].get("addressComponents", {}).get("zip", "")).strip()[:5]
+            return z if len(z) == 5 and z.isdigit() else None
+    except Exception:
+        return None
+
 BI_BASE = os.getenv("BI_BASE", "http://localhost:8000")
 HOME_REPORT_BASE = os.getenv("HOME_REPORT_BASE", "http://localhost:8001")
 CV_MODELS_BASE = os.getenv("CV_MODELS_BASE", "http://localhost:8003")
@@ -239,6 +258,10 @@ async def pipeline_run(
             return r.json()
 
     resolved_zip = _zipcode_from(address, zipcode)
+    if not resolved_zip and address:
+        resolved_zip = await _geocode_zipcode(address)
+        if resolved_zip:
+            logger.info("Geocoded '%s' → %s", address, resolved_zip)
 
     async def call_bi() -> dict[str, Any]:
         if not resolved_zip:
