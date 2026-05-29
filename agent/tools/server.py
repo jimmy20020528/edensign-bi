@@ -101,7 +101,7 @@ async def generate_listing(req: GenerateListingInput) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=30.0) as client:
         r = await client.get(
             f"{BI_BASE}/analyze/by-zipcode",
-            params={"zipcode": req.zipcode, "objective": "balanced", "scoring_mode": "hybrid"},
+            params={"zipcode": req.zipcode, "objective": "balanced", "scoring_mode": "heuristic"},
         )
         if r.status_code != 200:
             raise HTTPException(status_code=502, detail=f"BI API error: {r.text[:200]}")
@@ -244,7 +244,7 @@ async def pipeline_run(
         if not resolved_zip:
             return {"error": "cannot determine zipcode from address"}
         async with httpx.AsyncClient(timeout=60.0) as client:
-            params: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "hybrid"}
+            params: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "heuristic"}
             r = await client.get(f"{BI_BASE}/analyze/by-zipcode", params=params)
             if r.status_code != 200:
                 return {"error": r.text[:300]}
@@ -254,7 +254,7 @@ async def pipeline_run(
         if not resolved_zip:
             return {"error": "cannot determine zipcode from address"}
         async with httpx.AsyncClient(timeout=90.0) as client:
-            payload: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "hybrid"}
+            payload: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "heuristic"}
             r = await client.post(f"{BI_BASE}/analyze/explain/by-zipcode", json=payload)
             if r.status_code != 200:
                 return {"error": r.text[:300]}
