@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass
 from datetime import date
@@ -11,6 +12,8 @@ import asyncpg
 import joblib
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 BASE_DATE = date(2022, 1, 1)
 BI_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -587,16 +590,21 @@ async def analyze_zipcode(
     )
 
     if not rows:
-        insufficient = {
+        try:
+            from app.services.llm_market_estimator import estimate_market_for_zip
+            logger.info("No DB data for %s — running LLM fallback", zipcode)
+            return await estimate_market_for_zip(zipcode, objective, scoring_mode)
+        except Exception as e:
+            logger.warning("LLM fallback failed for %s: %s", zipcode, e)
+        return {
             "zipcode": zipcode,
             "objective": objective,
             "weights": weights,
             "status": "insufficient_data",
-            "message": "No enough sold listings in last 365 days for this ZIP code.",
+            "message": "No styles with sufficient sold listings found for this ZIP code.",
             "recommended_styles": [],
             "confidence": {"overall": "low", "n_listings": 0, "style_count": 0},
         }
-        return insufficient
 
     styles: list[StyleAggregate] = [
         StyleAggregate(
