@@ -22,6 +22,8 @@ from db_dsn import get_db_dsn  # noqa: E402
 from app.services.gpt_explainer import explain_analysis_with_openai  # noqa: E402
 from app.services.zipcode_analyzer import analyze_zipcode  # noqa: E402
 from app.services.listing_writer import build_listing_copy  # noqa: E402
+from app.upload_router import router as upload_router  # noqa: E402
+from staging.router import router as staging_router  # noqa: E402
 
 
 @asynccontextmanager
@@ -63,6 +65,9 @@ app.add_middleware(
 _FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
 if _FRONTEND.is_dir():
     app.mount("/ui", StaticFiles(directory=str(_FRONTEND), html=True), name="frontend")
+
+app.include_router(upload_router)
+app.include_router(staging_router)
 
 
 @app.get("/health")
