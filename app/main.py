@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 import sys
@@ -10,6 +11,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 _scripts = Path(__file__).resolve().parent.parent / "scripts"
 if str(_scripts) not in sys.path:
@@ -23,11 +26,17 @@ from app.services.listing_writer import build_listing_copy  # noqa: E402
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.pool = await asyncpg.create_pool(get_db_dsn(), min_size=1, max_size=4)
+    try:
+        app.state.pool = await asyncpg.create_pool(get_db_dsn(), min_size=1, max_size=4)
+        logger.info("Database connected")
+    except Exception as e:
+        logger.warning("Database unavailable (%s) — running in LLM-only mode", e)
+        app.state.pool = None
     try:
         yield
     finally:
-        await app.state.pool.close()
+        if app.state.pool:
+            await app.state.pool.close()
 
 
 app = FastAPI(
@@ -89,6 +98,13 @@ async def analyze_by_zipcode(
             detail="Invalid scoring_mode. Use one of: heuristic, model, hybrid.",
         )
 
+    if app.state.pool is None:
+        try:
+            from app.services.llm_market_estimator import estimate_market_for_zip
+            return await estimate_market_for_zip(zipcode, objective, scoring_mode)
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"LLM fallback failed: {e}") from e
+
     async with app.state.pool.acquire() as conn:
         try:
             return await analyze_zipcode(
@@ -124,24 +140,25 @@ async def analyze_and_explain_by_zipcode(payload: ExplainByZipcodeRequest) -> di
             detail="Invalid scoring_mode. Use one of: heuristic, model, hybrid.",
         )
 
-    async with app.state.pool.acquire() as conn:
-        try:
-            analysis = await analyze_zipcode(
-                conn,
-                zipcode,
-                objective=objective,
-                scoring_mode=scoring_mode,
-            )
-            llm = await explain_analysis_with_openai(
-                analysis=analysis,
-                client_context=payload.client_context,
-            )
-            return {
-                "analysis": analysis,
-                "llm": llm,
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Explain failed: {e}") from e
+    async def _get_analysis(conn):
+        return await analyze_zipcode(
+            conn, zipcode, objective=objective, scoring_mode=scoring_mode
+        )
+
+    try:
+        if app.state.pool is None:
+            from app.services.llm_market_estimator import estimate_market_for_zip
+            analysis = await estimate_market_for_zip(zipcode, objective, scoring_mode)
+        else:
+            async with app.state.pool.acquire() as conn:
+                analysis = await _get_analysis(conn)
+        llm = await explain_analysis_with_openai(
+            analysis=analysis,
+            client_context=payload.client_context,
+        )
+        return {"analysis": analysis, "llm": llm}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Explain failed: {e}") from e
 
 
 class ListingWriteRequest(BaseModel):
