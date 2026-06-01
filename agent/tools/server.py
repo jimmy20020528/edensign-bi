@@ -7,10 +7,13 @@ that Langflow can call. Runs on port 8002.
 from __future__ import annotations
 
 import asyncio
+import base64
+import io
 import logging
 import os
-import re
 from typing import Any
+
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -19,39 +22,11 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-
-def _zipcode_from(address: str | None, zipcode: str | None) -> str | None:
-    """Return an explicit zipcode, or extract a 5-digit US zip from address."""
-    if zipcode and len(zipcode) == 5 and zipcode.isdigit():
-        return zipcode
-    if address:
-        m = re.search(r"\b(\d{5})\b", address)
-        if m:
-            return m.group(1)
-    return None
-
-
-async def _geocode_zipcode(address: str) -> str | None:
-    """Call Census Bureau geocoder to resolve a free-form address → zipcode."""
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            r = await client.get(
-                "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress",
-                params={"address": address, "benchmark": "2020", "format": "json"},
-            )
-            if r.status_code != 200:
-                return None
-            matches = r.json().get("result", {}).get("addressMatches", [])
-            if not matches:
-                return None
-            z = str(matches[0].get("addressComponents", {}).get("zip", "")).strip()[:5]
-            return z if len(z) == 5 and z.isdigit() else None
-    except Exception:
-        return None
-
 BI_BASE = os.getenv("BI_BASE", "http://localhost:8000")
-HOME_REPORT_BASE = os.getenv("HOME_REPORT_BASE", "http://localhost:8004")
+HOME_REPORT_BASE = os.getenv("HOME_REPORT_BASE", "http://localhost:8001")
 CV_MODELS_BASE = os.getenv("CV_MODELS_BASE", "http://localhost:8003")
+CV_SERVERLESS_ID = os.getenv("CV_SERVERLESS_ID", "")
+RUNPOD_API_KEY = os.getenv("RUNPOD_API_KEY", "")
 
 app = FastAPI(title="Edensign Agent Tools", version="0.1.0")
 app.add_middleware(
@@ -65,42 +40,6 @@ app.add_middleware(
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok", "tools": ["analyze_zipcode", "generate_listing", "generate_home_report", "classify_rooms"]}
-
-
-# ============================================================
-# UPLOAD + STAGING — proxy to BI (port 8000)
-# ============================================================
-class UploadImageRequest(BaseModel):
-    filename: str
-    content_type: str = "image/jpeg"
-    data: str
-
-
-@app.post("/upload")
-async def upload_image(req: UploadImageRequest) -> dict[str, Any]:
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        r = await client.post(f"{BI_BASE}/upload", json=req.model_dump())
-        if r.status_code != 200:
-            raise HTTPException(status_code=r.status_code, detail=r.text[:300])
-        return r.json()
-
-
-@app.post("/staging/run")
-async def staging_run_proxy(req: dict) -> dict[str, Any]:
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        r = await client.post(f"{BI_BASE}/staging/run", json=req)
-        if r.status_code != 200:
-            raise HTTPException(status_code=r.status_code, detail=r.text[:300])
-        return r.json()
-
-
-@app.get("/staging/status/{job_id}")
-async def staging_status_proxy(job_id: str) -> dict[str, Any]:
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        r = await client.get(f"{BI_BASE}/staging/status/{job_id}")
-        if r.status_code != 200:
-            raise HTTPException(status_code=r.status_code, detail=r.text[:300])
-        return r.json()
 
 
 # ============================================================
@@ -156,7 +95,7 @@ async def generate_listing(req: GenerateListingInput) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=30.0) as client:
         r = await client.get(
             f"{BI_BASE}/analyze/by-zipcode",
-            params={"zipcode": req.zipcode, "objective": "balanced", "scoring_mode": "heuristic"},
+            params={"zipcode": req.zipcode, "objective": "balanced", "scoring_mode": "hybrid"},
         )
         if r.status_code != 200:
             raise HTTPException(status_code=502, detail=f"BI API error: {r.text[:200]}")
@@ -222,26 +161,48 @@ async def generate_home_report(files: list[UploadFile] = File(...)) -> dict[str,
 
 
 # ============================================================
-# CLASSIFY ROOMS — proxy to cv-models service
+# CLASSIFY ROOMS — proxy to cv-models service or RunPod serverless
 # ============================================================
+def _resize_for_dinov2(image_bytes: bytes, max_short_edge: int = 512) -> bytes:
+    """Resize image so its short edge is at most max_short_edge px, return JPEG bytes."""
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    w, h = img.size
+    if min(w, h) <= max_short_edge:
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+        return buf.getvalue()
+    scale = max_short_edge / min(w, h)
+    img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=85)
+    return buf.getvalue()
+
+
 @app.post("/classify-rooms")
 async def classify_rooms(files: list[UploadFile] = File(...)) -> dict[str, Any]:
-    """Proxy room classification + instance grouping to cv-models (port 8003).
-
-    Returns: {photos: [{index, room_type, occupancy, confidence, group_id}],
-              groups: [{group_id, room_type, occupancy, photo_indices}]}
-    Returns HTTP 503 if cv-models is not running (wizard handles gracefully).
-    """
+    """Classify rooms via RunPod serverless (if CV_SERVERLESS_ID set) or local cv-models."""
     if not files:
         raise HTTPException(status_code=400, detail="No images provided.")
     if len(files) > 30:
         raise HTTPException(status_code=400, detail="Maximum 30 images per request.")
 
-    files_payload = []
+    file_data = []
     for f in files:
         content = await f.read()
-        files_payload.append(("files", (f.filename, content, f.content_type or "image/jpeg")))
+        file_data.append({
+            "filename": f.filename or "image.jpg",
+            "content": content,
+            "content_type": f.content_type or "image/jpeg",
+        })
 
+    if CV_SERVERLESS_ID:
+        return await _classify_via_serverless(file_data)
+
+    # Fallback: local cv-models service
+    files_payload = [
+        ("files", (fd["filename"], fd["content"], fd["content_type"]))
+        for fd in file_data
+    ]
     async with httpx.AsyncClient(timeout=120.0) as client:
         try:
             r = await client.post(f"{CV_MODELS_BASE}/classify-rooms", files=files_payload)
@@ -250,6 +211,34 @@ async def classify_rooms(files: list[UploadFile] = File(...)) -> dict[str, Any]:
             return r.json()
         except httpx.RequestError:
             raise HTTPException(status_code=503, detail="classification_unavailable")
+
+
+async def _classify_via_serverless(file_data: list[dict]) -> dict[str, Any]:
+    """Base64-encode + resize images, call RunPod /runsync, return output."""
+    images = []
+    for fd in file_data:
+        resized = _resize_for_dinov2(fd["content"])
+        images.append({
+            "data": base64.b64encode(resized).decode(),
+            "filename": fd["filename"],
+            "content_type": "image/jpeg",
+        })
+
+    url = f"https://api.runpod.ai/v2/{CV_SERVERLESS_ID}/runsync"
+    headers = {
+        "Authorization": f"Bearer {RUNPOD_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    async with httpx.AsyncClient(timeout=90.0) as client:
+        r = await client.post(url, json={"input": {"images": images}}, headers=headers)
+        if r.status_code != 200:
+            raise HTTPException(status_code=503,
+                                detail=f"Serverless error: {r.text[:300]}")
+        result = r.json()
+        if result.get("status") == "FAILED":
+            raise HTTPException(status_code=500,
+                                detail=f"Serverless job failed: {result.get('error', '')}")
+        return result.get("output", result)
 
 
 # ============================================================
@@ -293,27 +282,25 @@ async def pipeline_run(
                 return {"error": r.text[:300]}
             return r.json()
 
-    resolved_zip = _zipcode_from(address, zipcode)
-    if not resolved_zip and address:
-        resolved_zip = await _geocode_zipcode(address)
-        if resolved_zip:
-            logger.info("Geocoded '%s' → %s", address, resolved_zip)
-
     async def call_bi() -> dict[str, Any]:
-        if not resolved_zip:
-            return {"error": "cannot determine zipcode from address"}
-        async with httpx.AsyncClient(timeout=90.0) as client:
-            params: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "heuristic"}
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            params: dict[str, Any] = {"objective": "balanced", "scoring_mode": "hybrid"}
+            if address:
+                params["address"] = address
+            else:
+                params["zipcode"] = zipcode
             r = await client.get(f"{BI_BASE}/analyze/by-zipcode", params=params)
             if r.status_code != 200:
                 return {"error": r.text[:300]}
             return r.json()
 
     async def call_bi_explain() -> dict[str, Any]:
-        if not resolved_zip:
-            return {"error": "cannot determine zipcode from address"}
         async with httpx.AsyncClient(timeout=90.0) as client:
-            payload: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "heuristic"}
+            payload: dict[str, Any] = {"objective": "balanced", "scoring_mode": "hybrid"}
+            if address:
+                payload["address"] = address
+            else:
+                payload["zipcode"] = zipcode
             r = await client.post(f"{BI_BASE}/analyze/explain/by-zipcode", json=payload)
             if r.status_code != 200:
                 return {"error": r.text[:300]}
@@ -349,7 +336,6 @@ async def pipeline_run(
             agent_name=agent_name,
             agent_contact=agent_contact,
             additional_requirements=home_report_highlights,
-            market_data=bi_analysis if isinstance(bi_analysis, dict) and "error" not in bi_analysis else None,
         )
     finally:
         bi_explain = await bi_explain_task
@@ -417,23 +403,33 @@ async def _compose_listing_via_bi(
     agent_name: str | None = None,
     agent_contact: str | None = None,
     additional_requirements: str | None = None,
-    market_data: dict | None = None,
 ) -> str:
+    """Route listing generation through the bi listing writer (port 8000).
+
+    Text-only: images are not re-sent here because home-report-ai has already
+    assessed every photo with VLM and the highlights are passed via
+    additional_requirements, which is faster and avoids duplicate image tokens.
+    """
     style = (top_style_data.get("style") if top_style_data else None) or "Transitional"
     street_address = address or zipcode or ""
+
     payload: dict = {
         "style": style,
         "street_address": street_address,
         "property_type": property_type,
-        "bedrooms": bedrooms,
-        "bathrooms": bathrooms,
-        "sqft": sqft,
-        "listing_price": listing_price,
-        "agent_name": agent_name,
-        "agent_contact": agent_contact,
-        "additional_requirements": additional_requirements,
-        "market_data": market_data,
     }
+    if address:
+        payload["address"] = address
+    elif zipcode:
+        payload["zipcode"] = zipcode
+    if bedrooms is not None:   payload["bedrooms"] = bedrooms
+    if bathrooms is not None:  payload["bathrooms"] = bathrooms
+    if sqft is not None:       payload["sqft"] = sqft
+    if listing_price is not None: payload["listing_price"] = listing_price
+    if agent_name:             payload["agent_name"] = agent_name
+    if agent_contact:          payload["agent_contact"] = agent_contact
+    if additional_requirements: payload["additional_requirements"] = additional_requirements
+
     async with httpx.AsyncClient(timeout=120.0) as client:
         try:
             r = await client.post(f"{BI_BASE}/listing/write", json=payload)
