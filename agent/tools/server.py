@@ -68,6 +68,42 @@ async def health() -> dict:
 
 
 # ============================================================
+# UPLOAD + STAGING — proxy to BI (port 8000)
+# ============================================================
+class UploadImageRequest(BaseModel):
+    filename: str
+    content_type: str = "image/jpeg"
+    data: str
+
+
+@app.post("/upload")
+async def upload_image(req: UploadImageRequest) -> dict[str, Any]:
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        r = await client.post(f"{BI_BASE}/upload", json=req.model_dump())
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail=r.text[:300])
+        return r.json()
+
+
+@app.post("/staging/run")
+async def staging_run_proxy(req: dict) -> dict[str, Any]:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        r = await client.post(f"{BI_BASE}/staging/run", json=req)
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail=r.text[:300])
+        return r.json()
+
+
+@app.get("/staging/status/{job_id}")
+async def staging_status_proxy(job_id: str) -> dict[str, Any]:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        r = await client.get(f"{BI_BASE}/staging/status/{job_id}")
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail=r.text[:300])
+        return r.json()
+
+
+# ============================================================
 # TOOL 1: Analyze a ZIP code's staging style market
 # ============================================================
 class AnalyzeZipInput(BaseModel):
