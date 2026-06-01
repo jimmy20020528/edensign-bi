@@ -36,6 +36,8 @@ import pgeocode
 
 from app.services.redfin_market_data import get_zip_market_data
 from app.services.hmda_buyer_data import get_buyer_profile
+from app.services.walkscore_data import get_walk_scores
+from app.services.nces_school_data import get_school_profile
 
 BI_ROOT = Path(__file__).resolve().parent.parent.parent
 MODELS_BASELINE = BI_ROOT / "models" / "baseline"
@@ -316,6 +318,8 @@ def _build_response(
     market_context: str,
     redfin_data: Optional[dict],
     buyer_data: Optional[dict] = None,
+    walk_score_data: Optional[dict] = None,
+    school_profile: Optional[dict] = None,
 ) -> dict[str, Any]:
     weights = _weights_for_objective(objective)
 
@@ -399,6 +403,8 @@ def _build_response(
             "n_listings": 0,
             "style_count": len(items),
         },
+        "walk_score_data": walk_score_data,
+        "school_profile": school_profile,
         "market_context": market_context,
         "methodology": {
             "objective": "LLM-estimated style rankings with web search — no local sold data for this ZIP.",
@@ -424,9 +430,11 @@ async def estimate_market_for_zip(
     city, state = _city_state_for_zip(zipcode)
     calibration = _load_boston_calibration()
     # Run blocking I/O in a thread pool to avoid stalling the event loop
-    redfin_data, buyer_data = await asyncio.gather(
+    redfin_data, buyer_data, walk_score_data, school_profile = await asyncio.gather(
         asyncio.to_thread(get_zip_market_data, zipcode),
         asyncio.to_thread(get_buyer_profile, zipcode),
+        asyncio.to_thread(get_walk_scores, zipcode),
+        asyncio.to_thread(get_school_profile, zipcode),
     )
     user_prompt = _build_prompt(
         zipcode, city, state, objective, calibration, redfin_data, use_search,
@@ -482,4 +490,6 @@ async def estimate_market_for_zip(
         zipcode, city, state, objective, scoring_mode,
         llm_styles, market_context, redfin_data,
         buyer_data=buyer_data,
+        walk_score_data=walk_score_data,
+        school_profile=school_profile,
     )
