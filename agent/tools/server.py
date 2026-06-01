@@ -50,7 +50,7 @@ async def _geocode_zipcode(address: str) -> str | None:
         return None
 
 BI_BASE = os.getenv("BI_BASE", "http://localhost:8000")
-HOME_REPORT_BASE = os.getenv("HOME_REPORT_BASE", "http://localhost:8001")
+HOME_REPORT_BASE = os.getenv("HOME_REPORT_BASE", "http://localhost:8004")
 CV_MODELS_BASE = os.getenv("CV_MODELS_BASE", "http://localhost:8003")
 
 app = FastAPI(title="Edensign Agent Tools", version="0.1.0")
