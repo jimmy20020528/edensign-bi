@@ -302,7 +302,7 @@ async def pipeline_run(
     async def call_bi() -> dict[str, Any]:
         if not resolved_zip:
             return {"error": "cannot determine zipcode from address"}
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=90.0) as client:
             params: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "heuristic"}
             r = await client.get(f"{BI_BASE}/analyze/by-zipcode", params=params)
             if r.status_code != 200:
