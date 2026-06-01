@@ -62,9 +62,9 @@ PYTHONPATH="$ROOT/scripts" .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 
 PID_BI=$!
 echo "✓ bi          → port 8000 (PID $PID_BI)"
 
-(cd home-report-ai && .venv/bin/uvicorn src.api.main:app --host 0.0.0.0 --port 8001) &
+(cd home-report-ai && .venv/bin/uvicorn src.api.main:app --host 0.0.0.0 --port 8004) &
 PID_HR=$!
-echo "✓ home-report → port 8001 (PID $PID_HR)"
+echo "✓ home-report → port 8004 (PID $PID_HR)"
 
 (cd cv-models && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8003) &
 PID_CV=$!
