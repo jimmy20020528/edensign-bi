@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir \
     runpod
 
 # Pre-download DINOv2 weights so cold start doesn't fetch from HuggingFace
+ENV HF_HUB_ENABLE_HF_TRANSFER=0
 RUN python -c "\
 from transformers import AutoImageProcessor, AutoModel; \
 AutoImageProcessor.from_pretrained('facebook/dinov2-base'); \
