@@ -14,7 +14,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 import httpx
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -153,19 +153,6 @@ async def generate_home_report(files: list[UploadFile] = File(...)) -> dict[str,
         r = await client.post(f"{HOME_REPORT_BASE}/report", files=files_payload)
         if r.status_code != 200:
             raise HTTPException(status_code=502, detail=f"home-report-ai error: {r.text[:300]}")
-        return r.json()
-
-
-# ============================================================
-# UPLOAD — proxy to BI /upload (S3 via boto3)
-# ============================================================
-@app.post("/upload")
-async def upload_proxy(request: Request) -> dict:
-    body = await request.json()
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        r = await client.post(f"{BI_BASE}/upload", json=body)
-        if r.status_code != 200:
-            raise HTTPException(status_code=r.status_code, detail=r.text[:200])
         return r.json()
 
 
