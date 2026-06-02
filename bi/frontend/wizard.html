@@ -1792,12 +1792,32 @@ function App() {
   const [submissionId, setSubmissionId] = useState(null);
   const [photoUrls, setPhotoUrls] = useState([]);
 
-  const fileToBase64 = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  const EDENSIGN_API = "https://analytics.edensign.io";
+
+  const uploadToEdensign = async (file) => {
+    // Step 1: get presigned URL + key
+    const signResp = await fetch(`${EDENSIGN_API}/v1/imageSignedUrl`);
+    if (!signResp.ok) throw new Error(`imageSignedUrl HTTP ${signResp.status}`);
+    const {key, signedUrl} = await signResp.json();
+
+    // Step 2: PUT image binary to presigned URL
+    const putResp = await fetch(signedUrl, {
+      method: "PUT",
+      headers: {"Content-Type": file.type || "image/jpeg"},
+      body: file,
+    });
+    if (!putResp.ok) throw new Error(`S3 upload HTTP ${putResp.status}`);
+
+    // Step 3: validate and get final URL
+    const valResp = await fetch(`${EDENSIGN_API}/v1/imageValidations`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({key}),
+    });
+    if (!valResp.ok) throw new Error(`imageValidations HTTP ${valResp.status}`);
+    const valData = await valResp.json();
+    return valData.url;
+  };
 
   const handleAddFiles = (newFileList) => {
     const toAdd = [];
@@ -1811,16 +1831,7 @@ function App() {
     setFiles(prev => [...prev, ...toAdd]);
     setPhotoUrls(prev => [...prev, ...toAdd.map(() => null)]);
     toAdd.forEach((f, i) => {
-      fileToBase64(f).then(b64 =>
-        fetch(`${apiBase}/upload`, {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({data: b64, filename: f.name, content_type: f.type || "image/jpeg"})
-        })
-      ).then(resp => {
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        return resp.json();
-      }).then(({url}) => {
+      uploadToEdensign(f).then(url => {
         setPhotoUrls(prev => { const u = [...prev]; u[startIdx + i] = url; return u; });
       }).catch(e => {
         console.error('[upload]', f.name, e);
