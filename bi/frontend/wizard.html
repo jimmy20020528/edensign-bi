@@ -277,10 +277,11 @@
   .review-footer{display:flex;justify-content:flex-end;margin-top:16px;
     padding-top:14px;border-top:1px solid var(--line-soft);}
   /* ── StagingModal ── */
-  .staging-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;
-    display:flex;align-items:center;justify-content:center;padding:20px;}
-  .staging-box{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:440px;
-    max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.18);}
+  .staging-overlay{position:fixed;inset:0;background:#fff;z-index:1000;overflow-y:auto;}
+  .staging-box{background:#fff;padding:0;width:100%;max-width:none;max-height:none;}
+  .staging-header{position:sticky;top:0;background:#fff;border-bottom:1px solid #ece6dd;
+    padding:14px 28px;display:flex;align-items:center;gap:16px;z-index:10;}
+  .staging-content{max-width:1100px;margin:0 auto;padding:24px 28px 60px;}
   .staging-style-pill{border-radius:99px;padding:5px 12px;font-size:11px;cursor:pointer;
     border:1px solid #e0d8d0;transition:background .12s,color .12s;}
   .staging-style-pill.active{background:var(--primary);color:#fff;font-weight:600;
@@ -1669,12 +1670,15 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
     [...selectedRooms].every(rt => (roomGroups[rt]||[]).every(i => !!imageUrls[i]));
 
   return (
-    <div className="staging-overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="staging-overlay">
       <div className="staging-box">
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+        <div className="staging-header">
+          <button className="btn ghost" onClick={onClose}
+            style={{fontSize:13,padding:'6px 14px'}}>← Back to wizard</button>
           <div style={{fontWeight:700,fontSize:16,color:"var(--primary)"}}>✦ Go Staging</div>
-          <button style={{background:"none",border:"none",fontSize:18,color:"#bbb",cursor:"pointer"}} onClick={onClose}>✕</button>
+          <div style={{marginLeft:"auto",fontSize:11,color:"#999"}}>All work auto-saved</div>
         </div>
+        <div className="staging-content">
 
         <div style={{fontSize:10,textTransform:"uppercase",letterSpacing:".1em",color:"#888",marginBottom:8,fontWeight:600}}>Staging Style</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:18}}>
@@ -1800,6 +1804,7 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
             {globalError}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
