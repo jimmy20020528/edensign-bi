@@ -2,9 +2,9 @@
 """RunPod serverless handler for room classification + instance grouping."""
 from __future__ import annotations
 
-import base64
 import sys
 import tempfile
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -16,7 +16,7 @@ from app.main import _load_artifacts, _state
 
 
 def handler(job: dict) -> dict:
-    """Receive base64-encoded images, return classify-rooms response."""
+    """Receive image URLs, download and classify, return classify-rooms response."""
     images = job.get("input", {}).get("images", [])
     if not images:
         return {"error": "No images provided"}
@@ -28,10 +28,11 @@ def handler(job: dict) -> dict:
     tmp_paths: list[Path] = []
     try:
         for img in images:
-            raw = base64.b64decode(img["data"])
+            url = img["url"]
             suffix = Path(img.get("filename", "img.jpg")).suffix or ".jpg"
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-                tmp.write(raw)
+                with urllib.request.urlopen(url) as resp:
+                    tmp.write(resp.read())
                 tmp_paths.append(Path(tmp.name))
         return cv_main._classify_and_group(tmp_paths)
     except Exception as e:
