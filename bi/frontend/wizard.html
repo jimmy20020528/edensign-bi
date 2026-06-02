@@ -1146,6 +1146,16 @@ function GroupingEditor({result, files, onConfirm, onClose}) {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [hoverPhoto, setHoverPhoto] = useState(null);
   const [hoverPos, setHoverPos] = useState({x:0, y:0});
+  const [addPickerOpen, setAddPickerOpen] = useState(false);
+  const addPickerRef = useRef(null);
+  React.useEffect(() => {
+    if (!addPickerOpen) return;
+    const onDocClick = e => {
+      if (addPickerRef.current && !addPickerRef.current.contains(e.target)) setAddPickerOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [addPickerOpen]);
 
   const rtMap = useMemo(() => {
     const m = {};
@@ -1342,6 +1352,42 @@ function GroupingEditor({result, files, onConfirm, onClose}) {
           </div>
         );
       })}
+
+      {(() => {
+        const missing = Object.keys(ROOM_ICONS).filter(rt => !rtMap[rt]);
+        const allAdded = missing.length === 0;
+        return (
+          <div ref={addPickerRef} style={{position:'relative',margin:'10px 0 14px',textAlign:'center'}}>
+            <button
+              disabled={allAdded}
+              title={allAdded ? 'All room types added' : ''}
+              onClick={() => setAddPickerOpen(o => !o)}
+              style={{fontSize:11,background:'#fff',border:'1px solid #d0d4dc',borderRadius:99,
+                padding:'5px 14px',color: allAdded ? '#bbb' : '#555',
+                cursor: allAdded ? 'not-allowed' : 'pointer'}}>
+              + Add Room {!allAdded && (addPickerOpen ? '▴' : '▾')}
+            </button>
+            {addPickerOpen && !allAdded && (
+              <div style={{position:'absolute',top:'100%',left:'50%',transform:'translateX(-50%)',
+                marginTop:6,background:'#fff',border:'1px solid #d0d4dc',borderRadius:8,
+                padding:'6px 0',minWidth:180,boxShadow:'0 6px 20px rgba(0,0,0,0.08)',
+                zIndex:10,textAlign:'left'}}>
+                <div style={{fontSize:10,color:'#999',fontWeight:600,padding:'4px 14px 6px',
+                  textTransform:'uppercase',letterSpacing:0.5}}>Add a Room</div>
+                {missing.map(rt => (
+                  <div key={rt}
+                    onClick={() => {addGroup(rt, 'furnished'); setAddPickerOpen(false);}}
+                    style={{padding:'6px 14px',fontSize:12,color:'#444',cursor:'pointer'}}
+                    onMouseEnter={e => e.currentTarget.style.background='#f4f6fa'}
+                    onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                    {ROOM_ICONS[rt]} {fmtRoom(rt)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="review-footer">
         <button className="btn primary" onClick={handleConfirm}>Confirm Rooms →</button>
