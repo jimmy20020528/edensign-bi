@@ -7,18 +7,14 @@ that Langflow can call. Runs on port 8002.
 from __future__ import annotations
 
 import asyncio
-import base64
-import io
 import logging
 import os
 from typing import Any
 
-from PIL import Image
-
 logger = logging.getLogger(__name__)
 
 import httpx
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -161,48 +157,45 @@ async def generate_home_report(files: list[UploadFile] = File(...)) -> dict[str,
 
 
 # ============================================================
-# CLASSIFY ROOMS — proxy to cv-models service or RunPod serverless
+# UPLOAD — proxy to BI /upload (S3 via boto3)
 # ============================================================
-def _resize_for_dinov2(image_bytes: bytes, max_short_edge: int = 512) -> bytes:
-    """Resize image so its short edge is at most max_short_edge px, return JPEG bytes."""
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    w, h = img.size
-    if min(w, h) <= max_short_edge:
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=85)
-        return buf.getvalue()
-    scale = max_short_edge / min(w, h)
-    img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=85)
-    return buf.getvalue()
+@app.post("/upload")
+async def upload_proxy(request: Request) -> dict:
+    body = await request.json()
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        r = await client.post(f"{BI_BASE}/upload", json=body)
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail=r.text[:200])
+        return r.json()
+
+
+# ============================================================
+# CLASSIFY ROOMS — accepts JSON image URLs, routes to serverless or local
+# ============================================================
+class ClassifyRoomsInput(BaseModel):
+    image_urls: list[str]
 
 
 @app.post("/classify-rooms")
-async def classify_rooms(files: list[UploadFile] = File(...)) -> dict[str, Any]:
+async def classify_rooms(req: ClassifyRoomsInput) -> dict[str, Any]:
     """Classify rooms via RunPod serverless (if CV_SERVERLESS_ID set) or local cv-models."""
-    if not files:
+    if not req.image_urls:
         raise HTTPException(status_code=400, detail="No images provided.")
-    if len(files) > 30:
+    if len(req.image_urls) > 30:
         raise HTTPException(status_code=400, detail="Maximum 30 images per request.")
 
-    file_data = []
-    for f in files:
-        content = await f.read()
-        file_data.append({
-            "filename": f.filename or "image.jpg",
-            "content": content,
-            "content_type": f.content_type or "image/jpeg",
-        })
-
     if CV_SERVERLESS_ID:
-        return await _classify_via_serverless(file_data)
+        return await _classify_via_serverless(req.image_urls)
 
-    # Fallback: local cv-models service
-    files_payload = [
-        ("files", (fd["filename"], fd["content"], fd["content_type"]))
-        for fd in file_data
-    ]
+    # Fallback: download from URLs and proxy to local cv-models as multipart
+    files_payload = []
+    async with httpx.AsyncClient(timeout=30.0) as dl_client:
+        for i, url in enumerate(req.image_urls):
+            r = await dl_client.get(url)
+            r.raise_for_status()
+            filename = url.split("/")[-1] or f"image_{i}.jpg"
+            files_payload.append(("files", (filename, r.content, "image/jpeg")))
+
     async with httpx.AsyncClient(timeout=120.0) as client:
         try:
             r = await client.post(f"{CV_MODELS_BASE}/classify-rooms", files=files_payload)
@@ -213,16 +206,9 @@ async def classify_rooms(files: list[UploadFile] = File(...)) -> dict[str, Any]:
             raise HTTPException(status_code=503, detail="classification_unavailable")
 
 
-async def _classify_via_serverless(file_data: list[dict]) -> dict[str, Any]:
-    """Base64-encode + resize images, call RunPod /runsync, return output."""
-    images = []
-    for fd in file_data:
-        resized = _resize_for_dinov2(fd["content"])
-        images.append({
-            "data": base64.b64encode(resized).decode(),
-            "filename": fd["filename"],
-            "content_type": "image/jpeg",
-        })
+async def _classify_via_serverless(image_urls: list[str]) -> dict[str, Any]:
+    """Send S3 image URLs to RunPod serverless; handler downloads from S3."""
+    images = [{"url": url, "filename": url.split("/")[-1] or "image.jpg"} for url in image_urls]
 
     url = f"https://api.runpod.ai/v2/{CV_SERVERLESS_ID}/runsync"
     headers = {
@@ -232,12 +218,10 @@ async def _classify_via_serverless(file_data: list[dict]) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=90.0) as client:
         r = await client.post(url, json={"input": {"images": images}}, headers=headers)
         if r.status_code != 200:
-            raise HTTPException(status_code=503,
-                                detail=f"Serverless error: {r.text[:300]}")
+            raise HTTPException(status_code=503, detail=f"Serverless error: {r.text[:300]}")
         result = r.json()
         if result.get("status") == "FAILED":
-            raise HTTPException(status_code=500,
-                                detail=f"Serverless job failed: {result.get('error', '')}")
+            raise HTTPException(status_code=500, detail=f"Serverless job failed: {result.get('error', '')}")
         return result.get("output", result)
 
 
