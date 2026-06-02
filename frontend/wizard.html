@@ -572,7 +572,7 @@ function StyleCard({s,selected,onSelect,onGoStaging}) {
       <div className="style-photo" style={{background:s.photo}}/>
       <div className="style-body">
         <div>
-          <h4 className="style-name">{s.name}</h4>
+          <h4 className="style-name">{displayStyle(s.name)}</h4>
           <div className="style-tags" style={{marginTop:6}}>
             {s.tags.map(t=><span key={t} className="tag">{t}</span>)}
             {s.warnings.map(w=><span key={w} className="warning-tag"><Ic.alert width="10" height="10"/>{w}</span>)}
@@ -810,7 +810,7 @@ function AISection({ai,aiLoading,activeStyle,setActiveStyle,styles,hmdaBuyer}) {
           <div className="style-tabs">
             {styles.map(s=>(
               <button key={s.id} type="button" className={`style-tab ${activeStyle===s.id?"active":""}`}
-                onClick={()=>setActiveStyle(s.id)}>{s.name}</button>
+                onClick={()=>setActiveStyle(s.id)}>{displayStyle(s.name)}</button>
             ))}
           </div>
           <ul className="tips-list">
@@ -1535,6 +1535,11 @@ function ListingDisplay({text}) {
 const STAGING_STYLES = ["Transitional","Modern","Scandinavian","Industrial",
   "Mid-Century Modern","Luxury","Coastal","Farmhouse","Standard"];
 
+// Display label override: backend canonical name → user-facing label.
+// Backend continues to use the canonical name everywhere; only the UI shows the short form.
+const STYLE_DISPLAY_NAMES = {"Mid-Century Modern":"Mid-Century"};
+const displayStyle = s => STYLE_DISPLAY_NAMES[s] || s;
+
 function StagingModal({files, classificationResult, defaultStyle, top1Style, biBase, submissionId, onClose}) {
   const [activeStyle, setActiveStyle] = React.useState(defaultStyle);
   const [selectedRooms, setSelectedRooms] = React.useState(new Set());
@@ -1691,7 +1696,7 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:18}}>
           {STAGING_STYLES.map(st => (
             <span key={st} className={`staging-style-pill${activeStyle===st?" active":""}`} onClick={()=>setActiveStyle(st)}>
-              {st}{st===top1Style?" ★":""}
+              {displayStyle(st)}{st===top1Style?" ★":""}
             </span>
           ))}
         </div>
@@ -1781,7 +1786,7 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
           {anyRunning ? "Processing…" : `Run Staging${selectedRooms.size>1?` (${selectedRooms.size} rooms)`:""} →`}
         </button>
         <div style={{textAlign:"center",fontSize:10,color:"#bbb",marginTop:7}}>
-          {`HD · ${activeStyle} · remove: ${removeFurniture?"on":"off"} · sub-style randomized`}
+          {`HD · ${displayStyle(activeStyle)} · remove: ${removeFurniture?"on":"off"} · sub-style randomized`}
         </div>
 
         {Object.entries(jobMap).some(([,j]) => j.status==='COMPLETED'||j.status==='FAILED'||j.status==='ERROR'||j.status==='TIMEOUT') && (
