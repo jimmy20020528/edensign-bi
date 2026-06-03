@@ -895,21 +895,18 @@ async function saveSubmission(inputs, data) {
 async function uploadPhotos(files, uploadBase) {
   const urls = await Promise.all(files.map(async (file, i) => {
     try {
-      const b64 = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = e => res(e.target.result.split(",")[1]);
-        r.onerror = rej;
-        r.readAsDataURL(file);
+      const sresp = await fetch(`${uploadBase}/v1/imageSignedUrl`);
+      if (!sresp.ok) return null;
+      const {key, signedUrl} = await sresp.json();
+      const put = await fetch(signedUrl, {method: "PUT", headers: {"Content-Type": file.type || "image/jpeg"}, body: file});
+      if (!put.ok) return null;
+      const vresp = await fetch(`${uploadBase}/v1/imageValidations`, {
+        method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({key}),
       });
-      const resp = await fetch(`${uploadBase}/upload`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({filename: file.name, content_type: file.type || "image/jpeg", data: b64}),
-      });
-      if (!resp.ok) return null;
-      const {url} = await resp.json();
+      if (!vresp.ok) return null;
+      const {url} = await vresp.json();
       return url;
-    } catch(e) { console.error('[DB] photo upload error:', i, e); return null; }
+    } catch(e) { console.error('[upload] error:', i, e); return null; }
   }));
   return urls.filter(Boolean);
 }
@@ -959,7 +956,7 @@ function fmtRoom(r) {
   return (r || '').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
 
-function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcode, onRun, running,
+function PhotoUpload({files, setFiles, location, setLocation, onRun, running,
                       classificationResult, classificationLoading, onClassify, onReview,
                       bedrooms, setBedrooms, bathrooms, setBathrooms, sqft, setSqft,
                       propertyType, setPropertyType, listingPrice, setListingPrice,
@@ -982,8 +979,7 @@ function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcod
     onRemoveFile?.();
   };
   const locTrim = location.trim();
-  const zipTrim = (zipcode||"").trim();
-  const canRun = files.length > 0 && (locTrim.length >= 6 || (zipTrim.length === 5 && /^\d{5}$/.test(zipTrim))) && !!classificationResult;
+  const canRun = files.length > 0 && locTrim.length >= 6 && !!classificationResult;
 
   return (
     <div className="search-card">
@@ -1046,28 +1042,15 @@ function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcod
       )}
       {!readOnly && (
         <div className="wizard-form-row" style={{gridTemplateColumns:"1fr auto"}}>
-          <div style={{display:"flex",gap:8}}>
-            <div className="field" style={{flex:1}}>
-              <label>Address</label>
-              <input
-                className="input"
-                type="text"
-                placeholder="484 Second St, Cambridge MA"
-                value={location}
-                onChange={(e)=>setLocation(e.target.value)}
-              />
-            </div>
-            <div className="field" style={{width:90}}>
-              <label>ZIP Code <span style={{color:"var(--orange)"}}>*</span></label>
-              <input
-                className="input"
-                type="text"
-                placeholder="02139"
-                maxLength={5}
-                value={zipcode||""}
-                onChange={(e)=>setZipcode(e.target.value.replace(/\D/g,"").slice(0,5))}
-              />
-            </div>
+          <div className="field">
+            <label>Address</label>
+            <input
+              className="input"
+              type="text"
+              placeholder="20 Allston St, Boston MA"
+              value={location}
+              onChange={(e)=>setLocation(e.target.value)}
+            />
           </div>
           <button className="submit-btn" disabled={!canRun || running} onClick={onRun}
             title={!classificationResult ? "Classify rooms first" : ""}>
@@ -1768,12 +1751,11 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
 
 /* ── App ── */
 function App() {
-  const [apiBase] = useState("https://t88n3smkxwmj09-8002.proxy.runpod.net");           // Tool service (Wizard's backend)
+  const [apiBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8002.proxy.runpod.net"):"http://localhost:8002";});           // Tool service (Wizard's backend)
   const [biBase]  = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
   const [page, setPage] = useState("wizard");
   const [files, setFiles] = useState([]);
   const [location, setLocation] = useState("");        // property address
-  const [zipcode, setZipcode] = useState("");
   const [bedrooms, setBedrooms] = useState("");
   const [bathrooms, setBathrooms] = useState("");
   const [sqft, setSqft] = useState("");
@@ -1795,7 +1777,7 @@ function App() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [stagingModalStyle, setStagingModalStyle] = useState(null);
   const [stagingTop1, setStagingTop1] = useState("");
-  const [stagingBase] = useState("https://t88n3smkxwmj09-8000.proxy.runpod.net");
+  const [stagingBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8000.proxy.runpod.net"):"http://localhost:8000";});
   const [submissionId, setSubmissionId] = useState(null);
 
   const openStagingModal = (styleName) => {
@@ -1821,8 +1803,6 @@ function App() {
       const form = new FormData();
       const locTrim = location.trim();
       form.append("address", locTrim);
-      const zipTrim = zipcode.trim();
-      if (zipTrim.length === 5 && /^\d{5}$/.test(zipTrim)) form.append("zipcode", zipTrim);
       if (bedrooms !== "") form.append("bedrooms", bedrooms);
       if (bathrooms !== "") form.append("bathrooms", bathrooms);
       if (sqft !== "") form.append("sqft", sqft);
@@ -1840,9 +1820,9 @@ function App() {
       setApiOk(true);
       setProgressStep(4);
       setResult(data);
-      uploadPhotos(files, stagingBase).then(photoUrls =>
+      uploadPhotos(files, "https://analytics.edensign.io").then(photoUrls =>
         saveSubmission(
-          {address:location.trim(), zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
+          {address:location.trim(), bedrooms, bathrooms, sqft, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
           data
         ).then(id => { if (id) setSubmissionId(id); })
       );
@@ -1871,9 +1851,13 @@ function App() {
     setClassificationLoading(true);
     setClassificationError(null);
     try {
-      const form = new FormData();
-      files.forEach(f => form.append("files", f, f.name));
-      const r = await fetch(`${apiBase}/classify-rooms`, {method:"POST", body:form});
+      const imageUrls = await uploadPhotos(files, "https://analytics.edensign.io");
+      if (!imageUrls.length) { setClassificationError("Photo upload failed - no image URLs."); return; }
+      const r = await fetch(`${apiBase}/classify-rooms`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({image_urls: imageUrls}),
+      });
       if (!r.ok) {
         const body = await r.json().catch(()=>({}));
         if (r.status === 503) {
@@ -1911,7 +1895,7 @@ function App() {
 
           <PhotoUpload
             files={files} setFiles={setFiles}
-            location={location} setLocation={setLocation} zipcode={zipcode} setZipcode={setZipcode}
+            location={location} setLocation={setLocation}
             onRun={runPipeline} running={running}
             classificationResult={classificationResult}
             classificationLoading={classificationLoading}
@@ -1975,15 +1959,10 @@ function App() {
               <KpiStrip kpis={mapped.kpis}/>
 
               <section className="results-grid">
-                {mapped.styles.length > 0 ? mapped.styles.map(s => (
+                {mapped.styles.map(s => (
                   <StyleCard key={s.id} s={s} selected={selectedCard===s.id} onSelect={onSelectCard}
                     onGoStaging={classificationResult ? ()=>openStagingModal(s.name) : undefined}/>
-                )) : (
-                  <div style={{gridColumn:"1/-1",padding:"32px 24px",background:"var(--surface)",borderRadius:12,textAlign:"center",color:"var(--fg-muted)"}}>
-                    <div style={{fontSize:15,fontWeight:500,marginBottom:8}}>No staging style data for ZIP {mapped.zip}</div>
-                    <div style={{fontSize:13}}>Our database currently covers Allston/Brighton (02134, 02135). Try an address in that area to see full market analysis.</div>
-                  </div>
-                )}
+                ))}
               </section>
 
               <MarketIntelSection
@@ -2011,7 +1990,7 @@ function App() {
               <ListingDisplay text={result.listing_text}/>
 
               <div style={{marginTop:32,display:"flex",justifyContent:"center"}}>
-                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setZipcode("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);}}>
+                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);}}>
                   ← Start over
                 </button>
               </div>
@@ -2024,7 +2003,7 @@ function App() {
               classificationResult={classificationResult}
               defaultStyle={stagingModalStyle}
               top1Style={stagingTop1}
-              biBase={apiBase}
+              biBase={stagingBase}
               submissionId={submissionId}
               onClose={()=>setStagingModalStyle(null)}
             />

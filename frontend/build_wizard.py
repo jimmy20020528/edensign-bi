@@ -188,21 +188,18 @@ async function saveSubmission(inputs, data) {
 async function uploadPhotos(files, uploadBase) {
   const urls = await Promise.all(files.map(async (file, i) => {
     try {
-      const b64 = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = e => res(e.target.result.split(",")[1]);
-        r.onerror = rej;
-        r.readAsDataURL(file);
+      const sresp = await fetch(`${uploadBase}/v1/imageSignedUrl`);
+      if (!sresp.ok) return null;
+      const {key, signedUrl} = await sresp.json();
+      const put = await fetch(signedUrl, {method: "PUT", headers: {"Content-Type": file.type || "image/jpeg"}, body: file});
+      if (!put.ok) return null;
+      const vresp = await fetch(`${uploadBase}/v1/imageValidations`, {
+        method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({key}),
       });
-      const resp = await fetch(`${uploadBase}/upload`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({filename: file.name, content_type: file.type || "image/jpeg", data: b64}),
-      });
-      if (!resp.ok) return null;
-      const {url} = await resp.json();
+      if (!vresp.ok) return null;
+      const {url} = await vresp.json();
       return url;
-    } catch(e) { console.error('[DB] photo upload error:', i, e); return null; }
+    } catch(e) { console.error('[upload] error:', i, e); return null; }
   }));
   return urls.filter(Boolean);
 }
@@ -1047,7 +1044,7 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
 
 /* ── App ── */
 function App() {
-  const [apiBase] = useState("https://zoha56i9j82kx9-8002.proxy.runpod.net");           // Tool service (Wizard's backend)
+  const [apiBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8002.proxy.runpod.net"):"http://localhost:8002";});           // Tool service (Wizard's backend)
   const [biBase]  = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
   const [page, setPage] = useState("wizard");
   const [files, setFiles] = useState([]);
@@ -1073,7 +1070,7 @@ function App() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [stagingModalStyle, setStagingModalStyle] = useState(null);
   const [stagingTop1, setStagingTop1] = useState("");
-  const [stagingBase] = useState("https://zoha56i9j82kx9-8000.proxy.runpod.net");
+  const [stagingBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8000.proxy.runpod.net"):"http://localhost:8000";});
   const [submissionId, setSubmissionId] = useState(null);
 
   const openStagingModal = (styleName) => {
@@ -1116,7 +1113,7 @@ function App() {
       setApiOk(true);
       setProgressStep(4);
       setResult(data);
-      uploadPhotos(files, stagingBase).then(photoUrls =>
+      uploadPhotos(files, "https://analytics.edensign.io").then(photoUrls =>
         saveSubmission(
           {address:location.trim(), bedrooms, bathrooms, sqft, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
           data
@@ -1147,9 +1144,13 @@ function App() {
     setClassificationLoading(true);
     setClassificationError(null);
     try {
-      const form = new FormData();
-      files.forEach(f => form.append("files", f, f.name));
-      const r = await fetch(`${apiBase}/classify-rooms`, {method:"POST", body:form});
+      const imageUrls = await uploadPhotos(files, "https://analytics.edensign.io");
+      if (!imageUrls.length) { setClassificationError("Photo upload failed - no image URLs."); return; }
+      const r = await fetch(`${apiBase}/classify-rooms`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({image_urls: imageUrls}),
+      });
       if (!r.ok) {
         const body = await r.json().catch(()=>({}));
         if (r.status === 503) {
