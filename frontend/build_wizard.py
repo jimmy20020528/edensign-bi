@@ -741,9 +741,17 @@ function HomeReportDisplay({hr}) {
   );
 }
 
-function ListingDisplay({text}) {
+function ListingDisplay({text, style, loading, error}) {
   const [copied, setCopied] = useState(false);
-  if (!text || text.startsWith('[listing_error') || text.startsWith('[listing_exception')) return null;
+  if (loading) return (
+    <div className="hr-card" style={{marginTop:32}}>Generating listing…</div>
+  );
+  if (error) return (
+    <div className="hr-card" style={{marginTop:32, color:"#b00"}}>Listing generation failed: {error}</div>
+  );
+  if (!text || text.startsWith('[listing_error') || text.startsWith('[listing_exception')) return (
+    <div className="hr-card" style={{marginTop:32, opacity:0.7}}>Pick a style above and click “Generate listing”.</div>
+  );
   const copy = () => {
     navigator.clipboard.writeText(text).then(()=>{
       setCopied(true);
@@ -754,7 +762,7 @@ function ListingDisplay({text}) {
     <>
       <header className="page-head" style={{marginTop:32}}>
         <div>
-          <h2 className="page-title" style={{fontSize:30}}>Suggested Listing Description</h2>
+          <h2 className="page-title" style={{fontSize:30}}>Suggested Listing Description{style ? ` · ${style}` : ""}</h2>
           <p className="page-sub">Grounded in your photos and ZIP-level market intel.</p>
         </div>
       </header>
@@ -1300,8 +1308,15 @@ function App() {
 
               <section className="results-grid">
                 {mapped.styles.map(s => (
-                  <StyleCard key={s.id} s={s} selected={selectedCard===s.id} onSelect={onSelectCard}
-                    onGoStaging={classificationResult ? ()=>openStagingModal(s.name) : undefined}/>
+                  <div key={s.id}>
+                    <StyleCard s={s} selected={selectedCard===s.id} onSelect={onSelectCard}
+                      onGoStaging={classificationResult ? ()=>openStagingModal(s.name) : undefined}/>
+                    <button className="btn primary" style={{width:"100%",marginTop:8}}
+                      disabled={listingLoadingId!==null}
+                      onClick={()=>generateListing(s)}>
+                      {listingLoadingId===s.id ? "Generating listing…" : "Generate listing"}
+                    </button>
+                  </div>
                 ))}
               </section>
 
@@ -1327,10 +1342,11 @@ function App() {
               <HomeReportDisplay hr={result.home_report}/>
 
               {/* Listing description */}
-              <ListingDisplay text={result.listing_text}/>
+              <ListingDisplay text={listingText} style={listingStyle}
+                loading={listingLoadingId!==null} error={listingError}/>
 
               <div style={{marginTop:32,display:"flex",justifyContent:"center"}}>
-                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);}}>
+                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);setListingText(null);setListingStyle(null);setListingError(null);setListingLoadingId(null);}}>
                   ← Start over
                 </button>
               </div>
