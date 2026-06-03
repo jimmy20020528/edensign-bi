@@ -277,10 +277,11 @@
   .review-footer{display:flex;justify-content:flex-end;margin-top:16px;
     padding-top:14px;border-top:1px solid var(--line-soft);}
   /* ── StagingModal ── */
-  .staging-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;
-    display:flex;align-items:center;justify-content:center;padding:20px;}
-  .staging-box{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:440px;
-    max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.18);}
+  .staging-overlay{position:fixed;inset:0;background:#fff;z-index:1000;overflow-y:auto;}
+  .staging-box{background:#fff;padding:0;width:100%;max-width:none;max-height:none;}
+  .staging-header{position:sticky;top:0;background:#fff;border-bottom:1px solid #ece6dd;
+    padding:14px 28px;display:flex;align-items:center;gap:16px;z-index:10;}
+  .staging-content{max-width:1100px;margin:0 auto;padding:24px 28px 60px;}
   .staging-style-pill{border-radius:99px;padding:5px 12px;font-size:11px;cursor:pointer;
     border:1px solid #e0d8d0;transition:background .12s,color .12s;}
   .staging-style-pill.active{background:var(--primary);color:#fff;font-weight:600;
@@ -571,7 +572,7 @@ function StyleCard({s,selected,onSelect,onGoStaging}) {
       <div className="style-photo" style={{background:s.photo}}/>
       <div className="style-body">
         <div>
-          <h4 className="style-name">{s.name}</h4>
+          <h4 className="style-name">{displayStyle(s.name)}</h4>
           <div className="style-tags" style={{marginTop:6}}>
             {s.tags.map(t=><span key={t} className="tag">{t}</span>)}
             {s.warnings.map(w=><span key={w} className="warning-tag"><Ic.alert width="10" height="10"/>{w}</span>)}
@@ -809,7 +810,7 @@ function AISection({ai,aiLoading,activeStyle,setActiveStyle,styles,hmdaBuyer}) {
           <div className="style-tabs">
             {styles.map(s=>(
               <button key={s.id} type="button" className={`style-tab ${activeStyle===s.id?"active":""}`}
-                onClick={()=>setActiveStyle(s.id)}>{s.name}</button>
+                onClick={()=>setActiveStyle(s.id)}>{displayStyle(s.name)}</button>
             ))}
           </div>
           <ul className="tips-list">
@@ -967,7 +968,7 @@ function fmtRoom(r) {
   return (r || '').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
 
-function PhotoUpload({files, setFiles, location, setLocation, onRun, running,
+function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcode, onRun, running,
                       classificationResult, classificationLoading, onClassify, onReview,
                       bedrooms, setBedrooms, bathrooms, setBathrooms, sqft, setSqft,
                       propertyType, setPropertyType, listingPrice, setListingPrice,
@@ -990,7 +991,8 @@ function PhotoUpload({files, setFiles, location, setLocation, onRun, running,
     onRemoveFile?.();
   };
   const locTrim = location.trim();
-  const canRun = files.length > 0 && locTrim.length >= 6 && !!classificationResult;
+  const zipTrim = (zipcode||"").trim();
+  const canRun = files.length > 0 && (locTrim.length >= 6 || (zipTrim.length === 5 && /^\d{5}$/.test(zipTrim))) && !!classificationResult;
 
   return (
     <div className="search-card">
@@ -1053,15 +1055,28 @@ function PhotoUpload({files, setFiles, location, setLocation, onRun, running,
       )}
       {!readOnly && (
         <div className="wizard-form-row" style={{gridTemplateColumns:"1fr auto"}}>
-          <div className="field">
-            <label>Address</label>
-            <input
-              className="input"
-              type="text"
-              placeholder="20 Allston St, Boston MA"
-              value={location}
-              onChange={(e)=>setLocation(e.target.value)}
-            />
+          <div style={{display:"flex",gap:8}}>
+            <div className="field" style={{flex:1}}>
+              <label>Address</label>
+              <input
+                className="input"
+                type="text"
+                placeholder="484 Second St, Cambridge MA"
+                value={location}
+                onChange={(e)=>setLocation(e.target.value)}
+              />
+            </div>
+            <div className="field" style={{width:90}}>
+              <label>ZIP Code <span style={{color:"var(--orange)"}}>*</span></label>
+              <input
+                className="input"
+                type="text"
+                placeholder="02139"
+                maxLength={5}
+                value={zipcode||""}
+                onChange={(e)=>setZipcode(e.target.value.replace(/\D/g,"").slice(0,5))}
+              />
+            </div>
           </div>
           <button className="submit-btn" disabled={!canRun || running} onClick={onRun}
             title={!classificationResult ? "Classify rooms first" : ""}>
@@ -1147,6 +1162,16 @@ function GroupingEditor({result, files, onConfirm, onClose}) {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [hoverPhoto, setHoverPhoto] = useState(null);
   const [hoverPos, setHoverPos] = useState({x:0, y:0});
+  const [addPickerOpen, setAddPickerOpen] = useState(false);
+  const addPickerRef = useRef(null);
+  React.useEffect(() => {
+    if (!addPickerOpen) return;
+    const onDocClick = e => {
+      if (addPickerRef.current && !addPickerRef.current.contains(e.target)) setAddPickerOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [addPickerOpen]);
 
   const rtMap = useMemo(() => {
     const m = {};
@@ -1344,6 +1369,42 @@ function GroupingEditor({result, files, onConfirm, onClose}) {
         );
       })}
 
+      {(() => {
+        const missing = Object.keys(ROOM_ICONS).filter(rt => !rtMap[rt]);
+        const allAdded = missing.length === 0;
+        return (
+          <div ref={addPickerRef} style={{position:'relative',margin:'10px 0 14px',textAlign:'center'}}>
+            <button
+              disabled={allAdded}
+              title={allAdded ? 'All room types added' : ''}
+              onClick={() => setAddPickerOpen(o => !o)}
+              style={{fontSize:11,background:'#fff',border:'1px solid #d0d4dc',borderRadius:99,
+                padding:'5px 14px',color: allAdded ? '#bbb' : '#555',
+                cursor: allAdded ? 'not-allowed' : 'pointer'}}>
+              + Add Room {!allAdded && (addPickerOpen ? '▴' : '▾')}
+            </button>
+            {addPickerOpen && !allAdded && (
+              <div style={{position:'absolute',top:'100%',left:'50%',transform:'translateX(-50%)',
+                marginTop:6,background:'#fff',border:'1px solid #d0d4dc',borderRadius:8,
+                padding:'6px 0',minWidth:180,boxShadow:'0 6px 20px rgba(0,0,0,0.08)',
+                zIndex:10,textAlign:'left'}}>
+                <div style={{fontSize:10,color:'#999',fontWeight:600,padding:'4px 14px 6px',
+                  textTransform:'uppercase',letterSpacing:0.5}}>Add a Room</div>
+                {missing.map(rt => (
+                  <div key={rt}
+                    onClick={() => {addGroup(rt, 'furnished'); setAddPickerOpen(false);}}
+                    style={{padding:'6px 14px',fontSize:12,color:'#444',cursor:'pointer'}}
+                    onMouseEnter={e => e.currentTarget.style.background='#f4f6fa'}
+                    onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                    {ROOM_ICONS[rt]} {fmtRoom(rt)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       <div className="review-footer">
         <button className="btn primary" onClick={handleConfirm}>Confirm Rooms →</button>
       </div>
@@ -1490,6 +1551,11 @@ function ListingDisplay({text, style, loading, error}) {
 const STAGING_STYLES = ["Transitional","Modern","Scandinavian","Industrial",
   "Mid-Century Modern","Luxury","Coastal","Farmhouse","Standard"];
 
+// Display label override: backend canonical name → user-facing label.
+// Backend continues to use the canonical name everywhere; only the UI shows the short form.
+const STYLE_DISPLAY_NAMES = {"Mid-Century Modern":"Mid-Century"};
+const displayStyle = s => STYLE_DISPLAY_NAMES[s] || s;
+
 function StagingModal({files, classificationResult, defaultStyle, top1Style, biBase, submissionId, onClose}) {
   const [activeStyle, setActiveStyle] = React.useState(defaultStyle);
   const [selectedRooms, setSelectedRooms] = React.useState(new Set());
@@ -1632,18 +1698,21 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
     [...selectedRooms].every(rt => (roomGroups[rt]||[]).every(i => !!imageUrls[i]));
 
   return (
-    <div className="staging-overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="staging-overlay">
       <div className="staging-box">
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+        <div className="staging-header">
+          <button className="btn ghost" onClick={onClose}
+            style={{fontSize:13,padding:'6px 14px'}}>← Back to wizard</button>
           <div style={{fontWeight:700,fontSize:16,color:"var(--primary)"}}>✦ Go Staging</div>
-          <button style={{background:"none",border:"none",fontSize:18,color:"#bbb",cursor:"pointer"}} onClick={onClose}>✕</button>
+          <div style={{marginLeft:"auto",fontSize:11,color:"#999"}}>All work auto-saved</div>
         </div>
+        <div className="staging-content">
 
         <div style={{fontSize:10,textTransform:"uppercase",letterSpacing:".1em",color:"#888",marginBottom:8,fontWeight:600}}>Staging Style</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:18}}>
           {STAGING_STYLES.map(st => (
             <span key={st} className={`staging-style-pill${activeStyle===st?" active":""}`} onClick={()=>setActiveStyle(st)}>
-              {st}{st===top1Style?" ★":""}
+              {displayStyle(st)}{st===top1Style?" ★":""}
             </span>
           ))}
         </div>
@@ -1733,7 +1802,7 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
           {anyRunning ? "Processing…" : `Run Staging${selectedRooms.size>1?` (${selectedRooms.size} rooms)`:""} →`}
         </button>
         <div style={{textAlign:"center",fontSize:10,color:"#bbb",marginTop:7}}>
-          {`HD · ${activeStyle} · remove: ${removeFurniture?"on":"off"} · sub-style randomized`}
+          {`HD · ${displayStyle(activeStyle)} · remove: ${removeFurniture?"on":"off"} · sub-style randomized`}
         </div>
 
         {Object.entries(jobMap).some(([,j]) => j.status==='COMPLETED'||j.status==='FAILED'||j.status==='ERROR'||j.status==='TIMEOUT') && (
@@ -1763,6 +1832,7 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
             {globalError}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
@@ -1770,11 +1840,12 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
 
 /* ── App ── */
 function App() {
-  const [apiBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8002.proxy.runpod.net"):"http://localhost:8002";});           // Tool service (Wizard's backend)
+  const [apiBase] = useState("https://t88n3smkxwmj09-8002.proxy.runpod.net");           // Tool service (Wizard's backend)
   const [biBase]  = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
   const [page, setPage] = useState("wizard");
   const [files, setFiles] = useState([]);
   const [location, setLocation] = useState("");        // property address
+  const [zipcode, setZipcode] = useState("");
   const [bedrooms, setBedrooms] = useState("");
   const [bathrooms, setBathrooms] = useState("");
   const [sqft, setSqft] = useState("");
@@ -1796,7 +1867,7 @@ function App() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [stagingModalStyle, setStagingModalStyle] = useState(null);
   const [stagingTop1, setStagingTop1] = useState("");
-  const [stagingBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8000.proxy.runpod.net"):"http://localhost:8000";});
+  const [stagingBase] = useState("https://t88n3smkxwmj09-8000.proxy.runpod.net");
   const [submissionId, setSubmissionId] = useState(null);
   const [listingText, setListingText] = useState(null);
   const [listingStyle, setListingStyle] = useState(null);
@@ -1826,6 +1897,8 @@ function App() {
       const form = new FormData();
       const locTrim = location.trim();
       form.append("address", locTrim);
+      const zipTrim = zipcode.trim();
+      if (zipTrim.length === 5 && /^\d{5}$/.test(zipTrim)) form.append("zipcode", zipTrim);
       if (bedrooms !== "") form.append("bedrooms", bedrooms);
       if (bathrooms !== "") form.append("bathrooms", bathrooms);
       if (sqft !== "") form.append("sqft", sqft);
@@ -1845,7 +1918,7 @@ function App() {
       setResult(data);
       uploadPhotos(files, stagingBase).then(photoUrls =>
         saveSubmission(
-          {address:location.trim(), bedrooms, bathrooms, sqft, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
+          {address:location.trim(), zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
           data
         ).then(id => { if (id) setSubmissionId(id); })
       );
@@ -1871,7 +1944,7 @@ function App() {
   };
 
   const generateListing = async (s) => {
-    if (listingLoadingId !== null) return;            // guard rapid double-clicks
+    if (listingLoadingId !== null) return;
     setListingLoadingId(s.id);
     setListingError(null);
     try {
@@ -1950,7 +2023,7 @@ function App() {
 
           <PhotoUpload
             files={files} setFiles={setFiles}
-            location={location} setLocation={setLocation}
+            location={location} setLocation={setLocation} zipcode={zipcode} setZipcode={setZipcode}
             onRun={runPipeline} running={running}
             classificationResult={classificationResult}
             classificationLoading={classificationLoading}
@@ -2014,7 +2087,7 @@ function App() {
               <KpiStrip kpis={mapped.kpis}/>
 
               <section className="results-grid">
-                {mapped.styles.map(s => (
+                {mapped.styles.length > 0 ? mapped.styles.map(s => (
                   <div key={s.id}>
                     <StyleCard s={s} selected={selectedCard===s.id} onSelect={onSelectCard}
                       onGoStaging={classificationResult ? ()=>openStagingModal(s.name) : undefined}/>
@@ -2024,7 +2097,12 @@ function App() {
                       {listingLoadingId===s.id ? "Generating listing…" : "Generate listing"}
                     </button>
                   </div>
-                ))}
+                )) : (
+                  <div style={{gridColumn:"1/-1",padding:"32px 24px",background:"var(--surface)",borderRadius:12,textAlign:"center",color:"var(--fg-muted)"}}>
+                    <div style={{fontSize:15,fontWeight:500,marginBottom:8}}>No staging style data for ZIP {mapped.zip}</div>
+                    <div style={{fontSize:13}}>Our database currently covers Allston/Brighton (02134, 02135). Try an address in that area to see full market analysis.</div>
+                  </div>
+                )}
               </section>
 
               <MarketIntelSection
@@ -2053,7 +2131,7 @@ function App() {
                 loading={listingLoadingId!==null} error={listingError}/>
 
               <div style={{marginTop:32,display:"flex",justifyContent:"center"}}>
-                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);setListingText(null);setListingStyle(null);setListingError(null);setListingLoadingId(null);}}>
+                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setZipcode("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);setListingText(null);setListingStyle(null);setListingError(null);setListingLoadingId(null);}}>
                   ← Start over
                 </button>
               </div>
@@ -2066,7 +2144,7 @@ function App() {
               classificationResult={classificationResult}
               defaultStyle={stagingModalStyle}
               top1Style={stagingTop1}
-              biBase={stagingBase}
+              biBase={apiBase}
               submissionId={submissionId}
               onClose={()=>setStagingModalStyle(null)}
             />

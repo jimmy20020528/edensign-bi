@@ -185,14 +185,6 @@ async function saveSubmission(inputs, data) {
   return row.id;
 }
 
-async function updateSubmissionListing(submissionId, listingText, style) {
-  const { error } = await _sb.from('wizard_submissions')
-    .update({ listing_text: listingText, listing_style: style })
-    .eq('id', submissionId);
-  if (error) console.error('[DB] updateSubmissionListing error:', error);
-  else console.log('[DB] submission listing updated:', submissionId);
-}
-
 async function uploadPhotos(files, uploadBase) {
   const urls = await Promise.all(files.map(async (file, i) => {
     try {
@@ -744,17 +736,9 @@ function HomeReportDisplay({hr}) {
   );
 }
 
-function ListingDisplay({text, style, loading, error}) {
+function ListingDisplay({text}) {
   const [copied, setCopied] = useState(false);
-  if (loading) return (
-    <div className="hr-card" style={{marginTop:32}}>Generating listing…</div>
-  );
-  if (error) return (
-    <div className="hr-card" style={{marginTop:32, color:"#b00"}}>Listing generation failed: {error}</div>
-  );
-  if (!text || text.startsWith('[listing_error') || text.startsWith('[listing_exception')) return (
-    <div className="hr-card" style={{marginTop:32, opacity:0.7}}>Pick a style above and click “Generate listing”.</div>
-  );
+  if (!text || text.startsWith('[listing_error') || text.startsWith('[listing_exception')) return null;
   const copy = () => {
     navigator.clipboard.writeText(text).then(()=>{
       setCopied(true);
@@ -765,7 +749,7 @@ function ListingDisplay({text, style, loading, error}) {
     <>
       <header className="page-head" style={{marginTop:32}}>
         <div>
-          <h2 className="page-title" style={{fontSize:30}}>Suggested Listing Description{style ? ` · ${style}` : ""}</h2>
+          <h2 className="page-title" style={{fontSize:30}}>Suggested Listing Description</h2>
           <p className="page-sub">Grounded in your photos and ZIP-level market intel.</p>
         </div>
       </header>
@@ -1063,7 +1047,7 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
 
 /* ── App ── */
 function App() {
-  const [apiBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8002.proxy.runpod.net"):"http://localhost:8002";});           // Tool service (Wizard's backend)
+  const [apiBase] = useState("https://zoha56i9j82kx9-8002.proxy.runpod.net");           // Tool service (Wizard's backend)
   const [biBase]  = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
   const [page, setPage] = useState("wizard");
   const [files, setFiles] = useState([]);
@@ -1089,12 +1073,8 @@ function App() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [stagingModalStyle, setStagingModalStyle] = useState(null);
   const [stagingTop1, setStagingTop1] = useState("");
-  const [stagingBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8000.proxy.runpod.net"):"http://localhost:8000";});
+  const [stagingBase] = useState("https://zoha56i9j82kx9-8000.proxy.runpod.net");
   const [submissionId, setSubmissionId] = useState(null);
-  const [listingText, setListingText] = useState(null);
-  const [listingStyle, setListingStyle] = useState(null);
-  const [listingLoadingId, setListingLoadingId] = useState(null);
-  const [listingError, setListingError] = useState(null);
 
   const openStagingModal = (styleName) => {
     setStagingTop1(mapped?.styles?.[0]?.name || "");
@@ -1160,42 +1140,6 @@ function App() {
     } finally {
       clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
       setRunning(false);
-    }
-  };
-
-  const generateListing = async (s) => {
-    if (listingLoadingId !== null) return;            // guard rapid double-clicks
-    setListingLoadingId(s.id);
-    setListingError(null);
-    try {
-      const body = {
-        style: s.name,
-        home_report: result?.home_report || null,
-        market_data: result?.bi_analysis || null,
-        address: location.trim() || null,
-        zipcode: result?.zipcode || null,
-        bedrooms: bedrooms !== "" ? parseInt(bedrooms) : null,
-        bathrooms: bathrooms !== "" ? parseFloat(bathrooms) : null,
-        sqft: sqft !== "" ? parseInt(sqft) : null,
-        property_type: propertyType || "residential",
-        listing_price: listingPrice !== "" ? parseInt(listingPrice) : null,
-        agent_name: agentName.trim() || null,
-        agent_contact: agentContact.trim() || null,
-      };
-      const r = await fetch(`${apiBase}/generate-listing`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = await r.json();
-      setListingText(data.listing_text);
-      setListingStyle(s.name);
-      if (submissionId) updateSubmissionListing(submissionId, data.listing_text, s.name);
-    } catch (e) {
-      setListingError(e.message);
-    } finally {
-      setListingLoadingId(null);
     }
   };
 
@@ -1308,15 +1252,8 @@ function App() {
 
               <section className="results-grid">
                 {mapped.styles.map(s => (
-                  <div key={s.id}>
-                    <StyleCard s={s} selected={selectedCard===s.id} onSelect={onSelectCard}
-                      onGoStaging={classificationResult ? ()=>openStagingModal(s.name) : undefined}/>
-                    <button className="btn primary" style={{width:"100%",marginTop:8}}
-                      disabled={listingLoadingId!==null}
-                      onClick={()=>generateListing(s)}>
-                      {listingLoadingId===s.id ? "Generating listing…" : "Generate listing"}
-                    </button>
-                  </div>
+                  <StyleCard key={s.id} s={s} selected={selectedCard===s.id} onSelect={onSelectCard}
+                    onGoStaging={classificationResult ? ()=>openStagingModal(s.name) : undefined}/>
                 ))}
               </section>
 
@@ -1342,11 +1279,10 @@ function App() {
               <HomeReportDisplay hr={result.home_report}/>
 
               {/* Listing description */}
-              <ListingDisplay text={listingText} style={listingStyle}
-                loading={listingLoadingId!==null} error={listingError}/>
+              <ListingDisplay text={result.listing_text}/>
 
               <div style={{marginTop:32,display:"flex",justifyContent:"center"}}>
-                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);setListingText(null);setListingStyle(null);setListingError(null);setListingLoadingId(null);}}>
+                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);}}>
                   ← Start over
                 </button>
               </div>
