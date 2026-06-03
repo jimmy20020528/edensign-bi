@@ -1770,7 +1770,7 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
 
 /* ── App ── */
 function App() {
-  const [apiBase] = useState("https://zoha56i9j82kx9-8002.proxy.runpod.net");           // Tool service (Wizard's backend)
+  const [apiBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8002.proxy.runpod.net"):"http://localhost:8002";});           // Tool service (Wizard's backend)
   const [biBase]  = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
   const [page, setPage] = useState("wizard");
   const [files, setFiles] = useState([]);
@@ -1796,7 +1796,7 @@ function App() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [stagingModalStyle, setStagingModalStyle] = useState(null);
   const [stagingTop1, setStagingTop1] = useState("");
-  const [stagingBase] = useState("https://zoha56i9j82kx9-8000.proxy.runpod.net");
+  const [stagingBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8000.proxy.runpod.net"):"http://localhost:8000";});
   const [submissionId, setSubmissionId] = useState(null);
   const [listingText, setListingText] = useState(null);
   const [listingStyle, setListingStyle] = useState(null);
