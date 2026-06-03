@@ -328,29 +328,9 @@ async def pipeline_run(
             call_home_report(), call_bi()
         )
 
-        # Extract style data and home report highlights for listing
-        top_style_data = None
-        if isinstance(bi_analysis, dict) and bi_analysis.get("recommended_styles"):
-            top_style_data = bi_analysis["recommended_styles"][0]
-        home_report_highlights = _extract_home_report_highlights(home_report)
-        if home_report_highlights is None:
-            logger.warning("No room highlights above Q4 threshold — listing will be generic")
-
-        # Listing starts as soon as home_report + bi finish; bi_explain may already be done
-        listing_text = await _compose_listing_via_bi(
-            address=address,
-            zipcode=zipcode,
-            top_style_data=top_style_data,
-            bedrooms=bedrooms,
-            bathrooms=bathrooms,
-            sqft=sqft,
-            property_type=property_type,
-            listing_price=listing_price,
-            agent_name=agent_name,
-            agent_contact=agent_contact,
-            additional_requirements=home_report_highlights,
-            market_data=bi_analysis if isinstance(bi_analysis, dict) and "error" not in bi_analysis else None,
-        )
+        # Listing is generated on-demand per chosen style via /generate-listing,
+        # so the pipeline no longer composes it here.
+        pass
     finally:
         bi_explain = await bi_explain_task
 
@@ -366,7 +346,7 @@ async def pipeline_run(
         "home_report": home_report,
         "bi_analysis": bi_analysis,
         "bi_explain": bi_explain,
-        "listing_text": listing_text,
+        "listing_text": None,
     }
 
 
@@ -460,6 +440,7 @@ class ListingRequest(BaseModel):
     listing_price: int | None = None
     agent_name: str | None = None
     agent_contact: str | None = None
+    market_data: dict | None = None
 
 
 @app.post("/generate-listing")
@@ -480,6 +461,7 @@ async def generate_listing_for_style(req: ListingRequest) -> dict[str, Any]:
         agent_name=req.agent_name,
         agent_contact=req.agent_contact,
         additional_requirements=highlights,
+        market_data=req.market_data,
     )
     if text.startswith("[listing_error") or text.startswith("[listing_exception"):
         raise HTTPException(status_code=502, detail=text)

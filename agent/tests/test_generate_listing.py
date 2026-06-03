@@ -71,3 +71,38 @@ def test_generate_listing_bi_error_502():
     with patch.object(srv.httpx.AsyncClient, "post", new_callable=AsyncMock, return_value=resp):
         r = client.post("/generate-listing", json={"style": "Modern", "home_report": None})
     assert r.status_code == 502
+
+
+def test_pipeline_run_no_longer_generates_listing():
+    srv, client = _client()
+    posted = []
+
+    async def fake_post(self, url, **kwargs):
+        posted.append(url)
+        resp = MagicMock(); resp.status_code = 200
+        if url.endswith("/report"):
+            resp.json.return_value = {"rooms": []}
+        elif "explain" in url:
+            resp.json.return_value = {"analysis": {}, "llm": {}}
+        else:
+            resp.json.return_value = {}
+        return resp
+
+    async def fake_get(self, url, **kwargs):
+        resp = MagicMock(); resp.status_code = 200
+        resp.json.return_value = {"zipcode": "02134",
+                                  "recommended_styles": [{"style": "Modern"}]}
+        return resp
+
+    with patch.object(srv.httpx.AsyncClient, "post", new=fake_post), \
+         patch.object(srv.httpx.AsyncClient, "get", new=fake_get):
+        r = client.post(
+            "/pipeline/run",
+            files=[("files", ("a.jpg", b"x", "image/jpeg"))],
+            data={"zipcode": "02134"},
+        )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["listing_text"] is None
+    assert not any("/listing/write" in u for u in posted)
