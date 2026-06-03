@@ -412,6 +412,47 @@ async def _compose_listing_via_bi(
             return f"[listing_exception: {str(e)[:200]}]"
 
 
+# ============================================================
+# ON-DEMAND LISTING — generate for a chosen style
+# ============================================================
+class ListingRequest(BaseModel):
+    style: str
+    home_report: dict | None = None
+    address: str | None = None
+    zipcode: str | None = None
+    bedrooms: int | None = None
+    bathrooms: float | None = None
+    sqft: int | None = None
+    property_type: str = "residential"
+    listing_price: int | None = None
+    agent_name: str | None = None
+    agent_contact: str | None = None
+
+
+@app.post("/generate-listing")
+async def generate_listing_for_style(req: ListingRequest) -> dict[str, Any]:
+    """Generate a listing description for one chosen style, on demand."""
+    if not req.style or not req.style.strip():
+        raise HTTPException(status_code=400, detail="style is required.")
+    highlights = _extract_home_report_highlights(req.home_report)
+    text = await _compose_listing_via_bi(
+        address=req.address,
+        zipcode=req.zipcode,
+        top_style_data={"style": req.style},
+        bedrooms=req.bedrooms,
+        bathrooms=req.bathrooms,
+        sqft=req.sqft,
+        property_type=req.property_type,
+        listing_price=req.listing_price,
+        agent_name=req.agent_name,
+        agent_contact=req.agent_contact,
+        additional_requirements=highlights,
+    )
+    if text.startswith("[listing_error") or text.startswith("[listing_exception"):
+        raise HTTPException(status_code=502, detail=text)
+    return {"listing_text": text, "style": req.style}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8002, log_level="info")
