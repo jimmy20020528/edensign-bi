@@ -185,6 +185,14 @@ async function saveSubmission(inputs, data) {
   return row.id;
 }
 
+async function updateSubmissionListing(submissionId, listingText, style) {
+  const { error } = await _sb.from('wizard_submissions')
+    .update({ listing_text: listingText, listing_style: style })
+    .eq('id', submissionId);
+  if (error) console.error('[DB] updateSubmissionListing error:', error);
+  else console.log('[DB] submission listing updated:', submissionId);
+}
+
 async function uploadPhotos(files, uploadBase) {
   const urls = await Promise.all(files.map(async (file, i) => {
     try {
@@ -1072,6 +1080,10 @@ function App() {
   const [stagingTop1, setStagingTop1] = useState("");
   const [stagingBase] = useState(()=>{const o=window.location.origin;return o.includes(".proxy.runpod.net")?o.replace(/-\d+\.proxy\.runpod\.net/,"-8000.proxy.runpod.net"):"http://localhost:8000";});
   const [submissionId, setSubmissionId] = useState(null);
+  const [listingText, setListingText] = useState(null);
+  const [listingStyle, setListingStyle] = useState(null);
+  const [listingLoadingId, setListingLoadingId] = useState(null);
+  const [listingError, setListingError] = useState(null);
 
   const openStagingModal = (styleName) => {
     setStagingTop1(mapped?.styles?.[0]?.name || "");
@@ -1137,6 +1149,41 @@ function App() {
     } finally {
       clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
       setRunning(false);
+    }
+  };
+
+  const generateListing = async (s) => {
+    if (listingLoadingId !== null) return;            // guard rapid double-clicks
+    setListingLoadingId(s.id);
+    setListingError(null);
+    try {
+      const body = {
+        style: s.name,
+        home_report: result?.home_report || null,
+        address: location.trim() || null,
+        zipcode: result?.zipcode || null,
+        bedrooms: bedrooms !== "" ? parseInt(bedrooms) : null,
+        bathrooms: bathrooms !== "" ? parseFloat(bathrooms) : null,
+        sqft: sqft !== "" ? parseInt(sqft) : null,
+        property_type: propertyType || "residential",
+        listing_price: listingPrice !== "" ? parseInt(listingPrice) : null,
+        agent_name: agentName.trim() || null,
+        agent_contact: agentContact.trim() || null,
+      };
+      const r = await fetch(`${apiBase}/generate-listing`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      setListingText(data.listing_text);
+      setListingStyle(s.name);
+      if (submissionId) updateSubmissionListing(submissionId, data.listing_text, s.name);
+    } catch (e) {
+      setListingError(e.message);
+    } finally {
+      setListingLoadingId(null);
     }
   };
 
