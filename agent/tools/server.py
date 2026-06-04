@@ -398,7 +398,9 @@ async def _compose_listing_via_bi(
     agent_contact: str | None = None,
     additional_requirements: str | None = None,
     market_data: dict | None = None,
-) -> str:
+    template: str = "word_optimized",
+    home_report: dict | None = None,
+) -> dict:
     style = (top_style_data.get("style") if top_style_data else None) or "Transitional"
     street_address = address or zipcode or ""
     payload: dict = {
@@ -413,16 +415,18 @@ async def _compose_listing_via_bi(
         "agent_contact": agent_contact,
         "additional_requirements": additional_requirements,
         "market_data": market_data,
+        "template": template,
+        "home_report": home_report,
     }
     async with httpx.AsyncClient(timeout=120.0) as client:
         try:
             r = await client.post(f"{BI_BASE}/listing/write", json=payload)
             if r.status_code != 200:
-                return f"[listing_error: {r.text[:200]}]"
+                return {"_error": f"[listing_error: {r.text[:200]}]"}
             data = r.json()
-            return data.get("full_body") or "\n\n".join(data.get("paragraphs", []))
+            return data
         except Exception as e:
-            return f"[listing_exception: {str(e)[:200]}]"
+            return {"_error": f"[listing_exception: {str(e)[:200]}]"}
 
 
 # ============================================================
@@ -430,6 +434,7 @@ async def _compose_listing_via_bi(
 # ============================================================
 class ListingRequest(BaseModel):
     style: str
+    template: str = "word_optimized"
     home_report: dict | None = None
     address: str | None = None
     zipcode: str | None = None
@@ -449,7 +454,7 @@ async def generate_listing_for_style(req: ListingRequest) -> dict[str, Any]:
     if not req.style or not req.style.strip():
         raise HTTPException(status_code=400, detail="style is required.")
     highlights = _extract_home_report_highlights(req.home_report)
-    text = await _compose_listing_via_bi(
+    data = await _compose_listing_via_bi(
         address=req.address,
         zipcode=req.zipcode,
         top_style_data={"style": req.style},
@@ -462,10 +467,19 @@ async def generate_listing_for_style(req: ListingRequest) -> dict[str, Any]:
         agent_contact=req.agent_contact,
         additional_requirements=highlights,
         market_data=req.market_data,
+        template=req.template,
+        home_report=req.home_report,
     )
-    if text.startswith("[listing_error") or text.startswith("[listing_exception"):
-        raise HTTPException(status_code=502, detail=text)
-    return {"listing_text": text, "style": req.style}
+    if data.get("_error"):
+        raise HTTPException(status_code=502, detail=data["_error"])
+    text = data.get("full_body") or "\n\n".join(data.get("paragraphs", []))
+    return {
+        "listing_text": text,
+        "style": req.style,
+        "template": data.get("template", req.template),
+        "why_summary": data.get("why_summary", ""),
+        "why_steps": data.get("why_steps", {}),
+    }
 
 
 if __name__ == "__main__":

@@ -106,3 +106,17 @@ def test_pipeline_run_no_longer_generates_listing():
     body = r.json()
     assert body["listing_text"] is None
     assert not any("/listing/write" in u for u in posted)
+
+
+def test_generate_listing_forwards_template_and_why():
+    srv, client = _client()
+    resp = MagicMock(); resp.status_code = 200
+    resp.json.return_value = {"full_body": "text", "why_summary": "ws", "why_steps": {"style": "Story"}}
+    mock_post = AsyncMock(return_value=resp)
+    with patch.object(srv.httpx.AsyncClient, "post", mock_post):
+        r = client.post("/generate-listing", json={
+            "style": "Modern", "template": "story", "home_report": {"rooms": []}})
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["template"] == "story"
+    assert payload["home_report"] == {"rooms": []}
+    assert r.json()["why_summary"] == "ws"
