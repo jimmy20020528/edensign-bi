@@ -1521,7 +1521,7 @@ function ListingDisplay({text, style, loading, error}) {
     <div className="hr-card" style={{marginTop:32, color:"#b00"}}>Listing generation failed: {error}</div>
   );
   if (!text || text.startsWith('[listing_error') || text.startsWith('[listing_exception')) return (
-    <div className=”hr-card” style={{marginTop:32, opacity:0.7}}>Pick a writing style above and click “Generate listing”.</div>
+    <div className="hr-card" style={{marginTop:32, opacity:0.7}}>Pick a writing style above and click "Generate listing".</div>
   );
   const copy = () => {
     navigator.clipboard.writeText(text).then(()=>{
