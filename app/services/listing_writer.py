@@ -15,6 +15,8 @@ from typing import Any, Optional
 
 import httpx
 
+from app.services.listing_templates import get_template
+
 logger = logging.getLogger(__name__)
 
 
@@ -203,6 +205,8 @@ def _user_prompt(
     market_signals: Optional[dict[str, Any]],
     listing_price: Optional[int] = None,
     has_images: bool = False,
+    paragraph_instruction: Optional[str] = None,
+    visual_detail: Optional[str] = None,
 ) -> str:
     parts = []
     if bedrooms is not None:
@@ -226,10 +230,15 @@ def _user_prompt(
         "additional_requirements": additional_requirements or None,
         "required_output_fields": {
             "headline": "Short title: '{beds}BR {type} in {city}, {style tagline}'. Comma not dash. Max 12 words.",
-            "paragraphs": _paragraphs_instruction(has_images),
+            "paragraphs": paragraph_instruction or _paragraphs_instruction(has_images),
             "staging_notes": "Array of 5 staging directives for the team. One sentence each. Specific and actionable.",
+            "why_summary": "One natural sentence assessing WHY this listing reads as it does, given the property, market, photos, and style. An assessment, not a recap. No numbers or scores.",
+            "why_steps": "Object with keys among your_info, market, from_photos, style — each a short grounded phrase. OMIT a key entirely if there is no real signal for it (e.g., no photos, or market is just an estimate).",
         },
     }
+
+    if visual_detail:
+        payload["visual_detail"] = visual_detail
 
     if listing_price:
         payload["listing_price_tier"] = _price_tier(listing_price)
@@ -265,6 +274,26 @@ def _style_context(style: str) -> str:
     return contexts.get(style, f"{style} staging style.")
 
 
+def _extract_visual_detail(home_report) -> Optional[str]:
+    """Turn home-report-ai's per-room VLM output into specificity bullets. No new VLM call."""
+    if not isinstance(home_report, dict):
+        return None
+    lines = []
+    for room in home_report.get("rooms", []):
+        if not isinstance(room, dict):
+            continue
+        rt = room.get("room_type", "room")
+        mats = room.get("detected_materials") or {}
+        mat_str = ", ".join(f"{k}: {v}" for k, v in mats.items() if v)
+        feats = ", ".join(room.get("notable_features") or [])
+        bits = " | ".join(b for b in (mat_str, feats) if b)
+        if bits:
+            lines.append(f"- {rt}: {bits}")
+    if not lines:
+        return None
+    return "Visible details from the photos (use these specific materials/features):\n" + "\n".join(lines)
+
+
 async def build_listing_copy(
     style: str,
     street_address: str,
@@ -278,6 +307,8 @@ async def build_listing_copy(
     additional_requirements: Optional[str] = None,
     market_data: Optional[dict[str, Any]] = None,
     images: Optional[list[str]] = None,  # base64 data URLs: "data:image/jpeg;base64,..."
+    template: str = "word_optimized",
+    home_report: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
@@ -290,13 +321,22 @@ async def build_listing_copy(
     has_images = bool(images)
     logger.info("listing_writer: has_images=%s n_images=%d model=%s", has_images, len(images) if images else 0, model)
 
+    tmpl = get_template(template)
+    visual_detail = _extract_visual_detail(home_report)
+
     user_text = _user_prompt(
         style, street_address, bedrooms, bathrooms, sqft,
         property_type, agent_name, agent_contact,
         additional_requirements, market_signals,
         listing_price=listing_price,
         has_images=has_images,
+        paragraph_instruction=tmpl["paragraph_instruction"],
+        visual_detail=visual_detail,
     )
+
+    system_content = tmpl["system_prompt"]
+    if has_images:
+        system_content += "\n\nYou have been provided photos of the staged property. Base your descriptions on what you actually see: specific materials, colors, furniture, fixtures, and proportions visible in the images. Do not invent details that are not visible in the photos."
 
     if has_images:
         user_content: Any = [{"type": "text", "text": user_text}]
@@ -311,7 +351,7 @@ async def build_listing_copy(
     body = {
         "model": model,
         "messages": [
-            {"role": "system", "content": _system_prompt(has_images=has_images)},
+            {"role": "system", "content": system_content},
             {"role": "user",   "content": user_content},
         ],
         "temperature": 0.6,
@@ -349,8 +389,11 @@ async def build_listing_copy(
 
     return {
         "style":         style,
+        "template":      template,
         "headline":      headline,
         "paragraphs":    all_paragraphs,
         "full_body":     "\n\n".join(all_paragraphs),
         "staging_notes": staging_notes,
+        "why_summary":   parsed.get("why_summary", ""),
+        "why_steps":     parsed.get("why_steps", {}),
     }
