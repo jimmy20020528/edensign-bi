@@ -65,3 +65,22 @@ async def test_paragraphs_returned_as_string_not_char_exploded(monkeypatch):
             style="Modern", street_address="1 A St", template="concise")
     assert out["paragraphs"] == ["Step into the bright kitchen."]
     assert out["full_body"] == "Step into the bright kitchen."
+
+
+@pytest.mark.asyncio
+async def test_prompt_names_chosen_template_and_has_accuracy_guard(monkeypatch):
+    # The `style` why-step must reflect the chosen WRITING template (named in the prompt),
+    # and the prompt must carry an anti-hallucination guard so rooms not in the photos
+    # are not described.
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    captured = {}
+    async def fake_post(self, url, headers=None, json=None):
+        captured["body"] = json
+        return _mock_openai({"headline": "h", "paragraphs": ["p"], "staging_notes": [],
+                             "why_summary": "", "why_steps": {}})
+    with patch.object(listing_writer.httpx.AsyncClient, "post", new=fake_post):
+        await listing_writer.build_listing_copy(
+            style="Modern", street_address="1 A St", template="story")
+    user_msg = captured["body"]["messages"][1]["content"]
+    assert "chosen_writing_template" in user_msg and "Story" in user_msg  # writing template named for `style` step
+    assert "accuracy_rules" in user_msg                                   # anti-hallucination guard present

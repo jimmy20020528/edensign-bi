@@ -209,6 +209,8 @@ def _user_prompt(
     has_images: bool = False,
     paragraph_instruction: Optional[str] = None,
     visual_detail: Optional[str] = None,
+    template_label: Optional[str] = None,
+    template_definition: Optional[str] = None,
 ) -> str:
     parts = []
     if bedrooms is not None:
@@ -224,8 +226,8 @@ def _user_prompt(
 
     payload: dict[str, Any] = {
         "task": "Write a listing description for a staged property.",
-        "staging_style": style,
-        "style_context": _style_context(style),
+        "staging_design_style": style,
+        "staging_design_style_context": _style_context(style),
         "property": prop_summary,
         "agent_name": agent_name,
         "agent_contact": agent_contact,
@@ -234,13 +236,38 @@ def _user_prompt(
             "headline": "Short title: '{beds}BR {type} in {city}, {style tagline}'. Comma not dash. Max 12 words.",
             "paragraphs": ("Return a JSON array of strings, one element per paragraph. " + paragraph_instruction) if paragraph_instruction else _paragraphs_instruction(has_images),
             "staging_notes": "Array of 5 staging directives for the team. One sentence each. Specific and actionable.",
-            "why_summary": "One natural sentence assessing WHY this listing reads as it does, given the property, market, photos, and style. An assessment, not a recap. No numbers or scores.",
-            "why_steps": "Object with keys among your_info, market, from_photos, style — each a short grounded phrase. OMIT a key entirely if there is no real signal for it (e.g., no photos, or market is just an estimate).",
+            "why_summary": "One natural sentence assessing WHY this listing reads as it does — weave the property facts, the market tone, what the photos show, and the writing style the user chose. An assessment, not a recap. No numbers or scores.",
+            "why_steps": (
+                "An object. Include ONLY keys that have real signal; omit the rest. Each value is one short grounded phrase. Keys:\n"
+                "- your_info: what the USER ENTERED about the property (bedroom count, bathroom count, property type, square footage, price tier, address) and how those facts anchored the copy. Use the actual numbers/type. Do NOT put tone or market here.\n"
+                "- market: the market signal that set the TONE (pace, walkability, area character). OMIT this key if market data is absent or only an LLM estimate.\n"
+                "- from_photos: specific materials/rooms/features ACTUALLY present in visual_detail. OMIT this key if no visual_detail was provided.\n"
+                "- style: the WRITING STYLE the user chose (named in chosen_writing_template) and why that voice shaped the listing. This is the chosen listing-writing template, NOT the staging/design style."
+            ),
         },
     }
 
+    if template_label:
+        payload["chosen_writing_template"] = {
+            "name": template_label,
+            "definition": template_definition or "",
+            "note": "The user selected this writing style. The `style` reasoning step must explain THIS choice, not the staging design style.",
+        }
+
     if visual_detail:
         payload["visual_detail"] = visual_detail
+        payload["accuracy_rules"] = (
+            "Bed/bath counts, property type, sqft, and address are user-provided facts you may state plainly. "
+            "But you may only DESCRIBE rooms, materials, finishes, light, and views that appear in visual_detail. "
+            "Do NOT invent visual descriptions of rooms not shown — e.g., if no bedroom appears in visual_detail, "
+            "do not describe bedrooms, their light, or their finishes."
+        )
+    else:
+        payload["accuracy_rules"] = (
+            "No photos were provided. State the user-provided facts (beds/baths/type/sqft/address) plainly, "
+            "but do NOT invent specific finishes, materials, or per-room visual details. "
+            "Speak to the general character of the staging design style instead."
+        )
 
     if listing_price:
         payload["listing_price_tier"] = _price_tier(listing_price)
@@ -337,6 +364,8 @@ async def build_listing_copy(
         has_images=has_images,
         paragraph_instruction=tmpl["paragraph_instruction"],
         visual_detail=visual_detail,
+        template_label=tmpl["label"],
+        template_definition=tmpl["definition"],
     )
 
     system_content = tmpl["system_prompt"]
