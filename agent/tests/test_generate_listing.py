@@ -119,4 +119,7 @@ def test_generate_listing_forwards_template_and_why():
     payload = mock_post.call_args.kwargs["json"]
     assert payload["template"] == "story"
     assert payload["home_report"] == {"rooms": []}
-    assert r.json()["why_summary"] == "ws"
+    resp_body = r.json()
+    assert resp_body["why_summary"] == "ws"
+    assert resp_body["why_steps"] == {"style": "Story"}
+    assert resp_body["template"] == "story"
