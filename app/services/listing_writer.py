@@ -233,13 +233,13 @@ def _user_prompt(
         "agent_contact": agent_contact,
         "additional_requirements": additional_requirements or None,
         "required_output_fields": {
-            "headline": "Short title: '{beds}BR {type} in {city}, {style tagline}'. Comma not dash. Max 12 words.",
+            "headline": "Short title naming the property type and city. Include the bedroom count ONLY if it appears in `property`; otherwise omit it. Comma not dash. Max 12 words.",
             "paragraphs": ("Return a JSON array of strings, one element per paragraph. " + paragraph_instruction) if paragraph_instruction else _paragraphs_instruction(has_images),
             "staging_notes": "Array of 5 staging directives for the team. One sentence each. Specific and actionable.",
             "why_summary": "One natural sentence assessing WHY this listing reads as it does — weave the property facts, the market tone, what the photos show, and the writing style the user chose. An assessment, not a recap. No numbers or scores.",
             "why_steps": (
                 "An object. Include ONLY keys that have real signal; omit the rest. Each value is one short grounded phrase. Keys:\n"
-                "- your_info: what the USER ENTERED about the property (bedroom count, bathroom count, property type, square footage, price tier, address) and how those facts anchored the copy. Use the actual numbers/type. Do NOT put tone or market here.\n"
+                "- your_info: what the USER ENTERED about the property (only the facts actually provided among bedroom count, bathroom count, property type, square footage, price tier, address) and how those facts anchored the copy. Use the actual provided numbers/type; never invent a count. Do NOT put tone or market here.\n"
                 "- market: the market signal that set the TONE (pace, walkability, area character). OMIT this key if market data is absent or only an LLM estimate.\n"
                 "- from_photos: specific materials/rooms/features ACTUALLY present in visual_detail. OMIT this key if no visual_detail was provided.\n"
                 "- style: the WRITING STYLE the user chose (named in chosen_writing_template) and why that voice shaped the listing. This is the chosen listing-writing template, NOT the staging/design style."
@@ -268,6 +268,12 @@ def _user_prompt(
             "but do NOT invent specific finishes, materials, or per-room visual details. "
             "Speak to the general character of the staging design style instead."
         )
+
+    payload["facts_rule"] = (
+        "Only state a bedroom count, bathroom count, square footage, or price if it appears in `property` above. "
+        "If one was not provided, do NOT mention it and do NOT invent or guess a number "
+        "(e.g., if no bedroom count is given, never write 'X-bedroom' or imply how many bedrooms there are)."
+    )
 
     if listing_price:
         payload["listing_price_tier"] = _price_tier(listing_price)

@@ -84,3 +84,6 @@ async def test_prompt_names_chosen_template_and_has_accuracy_guard(monkeypatch):
     user_msg = captured["body"]["messages"][1]["content"]
     assert "chosen_writing_template" in user_msg and "Story" in user_msg  # writing template named for `style` step
     assert "accuracy_rules" in user_msg                                   # anti-hallucination guard present
+    body = json.loads(user_msg)
+    assert "facts_rule" in body                                           # never-invent-counts guard present
+    assert "bed" not in body["property"].lower()                          # no bedroom count was provided -> not stated
