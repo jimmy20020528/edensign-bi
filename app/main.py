@@ -178,6 +178,8 @@ class ListingWriteRequest(BaseModel):
     agent_contact: str | None = None
     additional_requirements: str | None = None
     market_data: dict[str, Any] | None = None
+    template: str = "word_optimized"
+    home_report: dict[str, Any] | None = None
 
 
 @app.post("/listing/write")
