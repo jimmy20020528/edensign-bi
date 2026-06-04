@@ -158,11 +158,11 @@ Health: `curl localhost:8000/health`, `localhost:8001/health`, `localhost:8002/h
    same commit. `bi_explain` is the full `/analyze/explain` response — frontend
    extracts `bi_explain.llm` before passing to `mapAnalysis`.
 
-4. **`bi/frontend/index.html` and `bi/frontend/wizard.html` share components by
-   copy, not import.** Babel-in-browser doesn't support modules. When updating
-   a Style Atlas display component, update it via `bi/frontend/build_wizard.py`
-   which composes wizard.html from the same source. Editing wizard.html directly
-   will be overwritten on the next build.
+4. **`frontend/wizard.html` is hand-maintained — edit it directly.** It and
+   `frontend/index.html` share components by copy, not import (Babel-in-browser
+   doesn't support modules). There is no build step: `build_wizard.py` was removed
+   because it had drifted far behind the hand-edited `wizard.html` and regenerating
+   from it wiped real features. Edit `wizard.html` directly; never regenerate it.
 
 5. **`home-report-ai` is allowed to keep VLM calls in Stage 1 and Stage 5
    until cv-models integration ships.** Don't strip VLM from home-report-ai

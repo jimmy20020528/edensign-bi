@@ -138,18 +138,12 @@ Open **port 5173** URL in your browser → Listing Wizard.
 
 > **Note:** RunPod's reverse proxy handles HTTPS termination. The frontend is served over plain HTTP internally; the proxy presents it as HTTPS to the browser.
 
-> **Important:** The frontend calls the agent service (port 8002) and BI service (port 8000) directly. After deploying, update `apiBase` and `stagingBase` in `frontend/build_wizard.py` to the RunPod public URLs, then rebuild `wizard.html`.
+> **Important:** The frontend calls the agent service (port 8002) and BI service (port 8000) directly. After deploying, update `apiBase` and `stagingBase` directly in `frontend/wizard.html` (it is hand-maintained — there is no build step) to the RunPod public URLs.
 
 ```javascript
-// In build_wizard.py, update these two lines:
+// In frontend/wizard.html, update these two lines:
 const [apiBase] = useState("https://<pod-id>-8002.proxy.runpod.net");
 const [stagingBase] = useState("https://<pod-id>-8000.proxy.runpod.net");
-```
-
-Then rebuild:
-```bash
-cd /workspace/edensign-bi
-python3 frontend/build_wizard.py
 ```
 
 ---
