@@ -1521,7 +1521,7 @@ function ListingDisplay({text, style, loading, error}) {
     <div className="hr-card" style={{marginTop:32, color:"#b00"}}>Listing generation failed: {error}</div>
   );
   if (!text || text.startsWith('[listing_error') || text.startsWith('[listing_exception')) return (
-    <div className="hr-card" style={{marginTop:32, opacity:0.7}}>Pick a style above and click “Generate listing”.</div>
+    <div className=”hr-card” style={{marginTop:32, opacity:0.7}}>Pick a writing style above and click “Generate listing”.</div>
   );
   const copy = () => {
     navigator.clipboard.writeText(text).then(()=>{
@@ -1555,6 +1555,15 @@ const STAGING_STYLES = ["Transitional","Modern","Scandinavian","Industrial",
 // Backend continues to use the canonical name everywhere; only the UI shows the short form.
 const STYLE_DISPLAY_NAMES = {"Mid-Century Modern":"Mid-Century"};
 const displayStyle = s => STYLE_DISPLAY_NAMES[s] || s;
+
+// Writing templates (mirrors app/services/listing_templates.py — keep ids in sync).
+const LISTING_TEMPLATES = [
+  {id:"concise",        label:"Concise",        def:"Leads with the strongest feature; short and skimmable.", backed:"first ~50 words decide on mobile/search; tight copy gets more showings"},
+  {id:"word_optimized", label:"Word-Optimized", def:"Words shown to raise sale price; avoids ones that lower it.", backed:"Zillow analysis of listing words vs. sale price"},
+  {id:"aida",           label:"AIDA",           def:"Attention, Interest, Desire, Action; feeling then facts.", backed:"AIDA model, rooted in consumer psychology"},
+  {id:"story",          label:"Story",          def:"Tells the home's story with the buyer as the protagonist.", backed:"stories ~22x more memorable than facts (Bruner)"},
+  {id:"audience_first", label:"Audience-First", def:"Tailors the opening to the likely buyer; emotion plus facts.", backed:"audience targeting and feature-to-benefit framing"},
+];
 
 function StagingModal({files, classificationResult, defaultStyle, top1Style, biBase, submissionId, onClose}) {
   const [activeStyle, setActiveStyle] = React.useState(defaultStyle);
@@ -1873,6 +1882,9 @@ function App() {
   const [listingStyle, setListingStyle] = useState(null);
   const [listingLoadingId, setListingLoadingId] = useState(null);
   const [listingError, setListingError] = useState(null);
+  const [listingTemplate, setListingTemplate] = useState("word_optimized");
+  const [listingWhy, setListingWhy] = useState(null);
+  const [whyOpen, setWhyOpen] = useState(false);
 
   const openStagingModal = (styleName) => {
     setStagingTop1(mapped?.styles?.[0]?.name || "");
@@ -1950,6 +1962,7 @@ function App() {
     try {
       const body = {
         style: s.name,
+        template: listingTemplate,
         home_report: result?.home_report || null,
         market_data: result?.bi_analysis || null,
         address: location.trim() || null,
@@ -1971,6 +1984,7 @@ function App() {
       const data = await r.json();
       setListingText(data.listing_text);
       setListingStyle(s.name);
+      setListingWhy({summary: data.why_summary || "", steps: data.why_steps || {}});
       if (submissionId) updateSubmissionListing(submissionId, data.listing_text, s.name);
     } catch (e) {
       setListingError(e.message);
@@ -2091,11 +2105,6 @@ function App() {
                   <div key={s.id}>
                     <StyleCard s={s} selected={selectedCard===s.id} onSelect={onSelectCard}
                       onGoStaging={classificationResult ? ()=>openStagingModal(s.name) : undefined}/>
-                    <button className="btn primary" style={{width:"100%",marginTop:8}}
-                      disabled={listingLoadingId!==null}
-                      onClick={()=>generateListing(s)}>
-                      {listingLoadingId===s.id ? "Generating listing…" : "Generate listing"}
-                    </button>
                   </div>
                 )) : (
                   <div style={{gridColumn:"1/-1",padding:"32px 24px",background:"var(--surface)",borderRadius:12,textAlign:"center",color:"var(--fg-muted)"}}>
@@ -2127,11 +2136,52 @@ function App() {
               <HomeReportDisplay hr={result.home_report}/>
 
               {/* Listing description */}
+              <section style={{marginTop:32}}>
+                <header className="page-head">
+                  <div>
+                    <h2 className="page-title" style={{fontSize:30}}>Listing Description</h2>
+                    <p className="page-sub">Pick a writing style. Grounded in your photos, market, and staging style.</p>
+                  </div>
+                </header>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",margin:"12px 0"}}>
+                  {LISTING_TEMPLATES.map(t => (
+                    <button key={t.id} type="button"
+                      className={"btn"+(listingTemplate===t.id?" primary":" ghost")}
+                      title={t.def + " — backed by: " + t.backed}
+                      onClick={()=>setListingTemplate(t.id)}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{fontSize:12,color:"var(--fg-muted)",marginBottom:10}}>
+                  {LISTING_TEMPLATES.find(t=>t.id===listingTemplate)?.def}{" · "}
+                  <i>backed by {LISTING_TEMPLATES.find(t=>t.id===listingTemplate)?.backed}</i>
+                </div>
+                <button className="btn primary" disabled={listingLoadingId!==null}
+                  onClick={()=>{const so = mapped.styles.find(x=>x.id===activeStyleId) || mapped.styles[0]; if (so) generateListing(so);}}>
+                  {listingLoadingId!==null ? "Generating…" : "Generate listing"}
+                </button>
+              </section>
               <ListingDisplay text={listingText} style={listingStyle}
                 loading={listingLoadingId!==null} error={listingError}/>
+              {listingText && listingWhy?.summary && (
+                <div className="hr-card" style={{marginTop:10,fontSize:13,color:"var(--fg-muted)"}}>
+                  <div>💡 {listingWhy.summary}{" "}
+                    <a href="#" onClick={e=>{e.preventDefault();setWhyOpen(o=>!o);}}>{whyOpen ? "hide" : "details"}</a>
+                  </div>
+                  {whyOpen && (
+                    <ul style={{marginTop:6,fontSize:12,paddingLeft:18}}>
+                      {listingWhy.steps.your_info   && <li><b>Your info:</b> {listingWhy.steps.your_info}</li>}
+                      {listingWhy.steps.market      && <li><b>Market:</b> {listingWhy.steps.market}</li>}
+                      {listingWhy.steps.from_photos && <li><b>From your photos:</b> {listingWhy.steps.from_photos}</li>}
+                      {listingWhy.steps.style       && <li><b>Style:</b> {listingWhy.steps.style}</li>}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               <div style={{marginTop:32,display:"flex",justifyContent:"center"}}>
-                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setZipcode("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);setListingText(null);setListingStyle(null);setListingError(null);setListingLoadingId(null);}}>
+                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setZipcode("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);setListingText(null);setListingStyle(null);setListingError(null);setListingLoadingId(null);setListingWhy(null);setWhyOpen(false);setListingTemplate("word_optimized");}}>
                   ← Start over
                 </button>
               </div>
