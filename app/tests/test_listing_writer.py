@@ -32,6 +32,7 @@ async def test_template_selects_system_prompt(monkeypatch):
     assert "narrative" in sys_prompt.lower()         # story template's system prompt
     assert out["why_summary"] == "ws"
     assert out["template"] == "story"
+    assert out["why_steps"] == {"style": "Story"}
 
 @pytest.mark.asyncio
 async def test_home_report_visual_injected(monkeypatch):

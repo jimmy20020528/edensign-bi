@@ -20,6 +20,8 @@ from app.services.listing_templates import get_template
 logger = logging.getLogger(__name__)
 
 
+# Retained (currently unused): the original "spare voice". Kept pending George's decision
+# on whether to offer it as a 6th "Minimal" template. Do not delete without that decision.
 def _system_prompt(has_images: bool = False) -> str:
     base = """You are a real estate copywriter known for spare, precise language that sells without hype.
 
@@ -283,9 +285,12 @@ def _extract_visual_detail(home_report) -> Optional[str]:
         if not isinstance(room, dict):
             continue
         rt = room.get("room_type", "room")
-        mats = room.get("detected_materials") or {}
+        mats = room.get("detected_materials")
+        if not isinstance(mats, dict):
+            mats = {}
         mat_str = ", ".join(f"{k}: {v}" for k, v in mats.items() if v)
-        feats = ", ".join(room.get("notable_features") or [])
+        raw_feats = room.get("notable_features")
+        feats = ", ".join(raw_feats) if isinstance(raw_feats, list) else ""
         bits = " | ".join(b for b in (mat_str, feats) if b)
         if bits:
             lines.append(f"- {rt}: {bits}")
