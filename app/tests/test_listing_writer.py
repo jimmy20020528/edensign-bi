@@ -48,3 +48,20 @@ async def test_home_report_visual_injected(monkeypatch):
             home_report=HOME_REPORT)
     user_msg = captured["body"]["messages"][1]["content"]
     assert "quartz" in user_msg and "white oak" in user_msg   # visual detail reached the prompt
+
+
+@pytest.mark.asyncio
+async def test_paragraphs_returned_as_string_not_char_exploded(monkeypatch):
+    # Regression: when the LLM returns `paragraphs` as a single string (not a list),
+    # build_listing_copy must NOT iterate it character-by-character (which produced
+    # full_body == "S\n\nt\n\ne\n\np" in the UI).
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    async def fake_post(self, url, headers=None, json=None):
+        return _mock_openai({"headline": "h",
+                             "paragraphs": "Step into the bright kitchen.",
+                             "staging_notes": [], "why_summary": "", "why_steps": {}})
+    with patch.object(listing_writer.httpx.AsyncClient, "post", new=fake_post):
+        out = await listing_writer.build_listing_copy(
+            style="Modern", street_address="1 A St", template="concise")
+    assert out["paragraphs"] == ["Step into the bright kitchen."]
+    assert out["full_body"] == "Step into the bright kitchen."

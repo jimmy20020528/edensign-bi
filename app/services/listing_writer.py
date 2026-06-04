@@ -232,7 +232,7 @@ def _user_prompt(
         "additional_requirements": additional_requirements or None,
         "required_output_fields": {
             "headline": "Short title: '{beds}BR {type} in {city}, {style tagline}'. Comma not dash. Max 12 words.",
-            "paragraphs": paragraph_instruction or _paragraphs_instruction(has_images),
+            "paragraphs": ("Return a JSON array of strings, one element per paragraph. " + paragraph_instruction) if paragraph_instruction else _paragraphs_instruction(has_images),
             "staging_notes": "Array of 5 staging directives for the team. One sentence each. Specific and actionable.",
             "why_summary": "One natural sentence assessing WHY this listing reads as it does, given the property, market, photos, and style. An assessment, not a recap. No numbers or scores.",
             "why_steps": "Object with keys among your_info, market, from_photos, style — each a short grounded phrase. OMIT a key entirely if there is no real signal for it (e.g., no photos, or market is just an estimate).",
@@ -381,6 +381,13 @@ async def build_listing_copy(
 
     headline      = parsed.get("headline", f"{bedrooms}BR {property_type} in {street_address.split(',')[1].strip() if ',' in street_address else ''}, {style}")
     paragraphs    = parsed.get("paragraphs", [])
+    # The LLM sometimes returns `paragraphs` as a single string (esp. shorter templates).
+    # Coerce to a list of strings so the cleanup below never iterates it character-by-character.
+    if isinstance(paragraphs, str):
+        paragraphs = [paragraphs]
+    elif not isinstance(paragraphs, list):
+        paragraphs = []
+    paragraphs = [p for p in paragraphs if isinstance(p, str) and p.strip()]
     staging_notes = parsed.get("staging_notes", [])
     logger.info("listing_writer: GPT returned %d paragraphs", len(paragraphs))
 
