@@ -1,6 +1,8 @@
 """The 5 user-selectable listing writing templates (anonymized; static definitions).
 Single source of truth for prompts + the UI definition/backing copy."""
 
+from typing import Any
+
 # Shared backbone appended to every template's system prompt.
 _BACKBONE = (
     "You are a real estate copywriter. Rules for every style: lead with the single "
@@ -52,7 +54,8 @@ _TEMPLATES = {
     },
 }
 
-TEMPLATE_IDS = ["concise", "word_optimized", "aida", "story", "audience_first"]
+TEMPLATE_IDS = list(_TEMPLATES)
 
-def get_template(template_id: str) -> dict:
-    return _TEMPLATES.get(template_id, _TEMPLATES["word_optimized"])
+
+def get_template(template_id: str) -> dict[str, Any]:
+    return dict(_TEMPLATES.get(template_id, _TEMPLATES["word_optimized"]))
