@@ -992,7 +992,7 @@ function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcod
   };
   const locTrim = location.trim();
   const zipTrim = (zipcode||"").trim();
-  const canRun = files.length > 0 && (locTrim.length >= 6 || (zipTrim.length === 5 && /^\d{5}$/.test(zipTrim))) && !!classificationResult;
+  const canRun = files.length > 0 && locTrim.length >= 6 && !!classificationResult;
 
   return (
     <div className="search-card">
@@ -1057,7 +1057,7 @@ function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcod
         <div className="wizard-form-row" style={{gridTemplateColumns:"1fr auto"}}>
           <div style={{display:"flex",gap:8}}>
             <div className="field" style={{flex:1}}>
-              <label>Address</label>
+              <label>Address <span style={{color:"var(--orange)"}}>*</span></label>
               <input
                 className="input"
                 type="text"
@@ -1067,7 +1067,7 @@ function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcod
               />
             </div>
             <div className="field" style={{width:90}}>
-              <label>ZIP Code <span style={{color:"var(--orange)"}}>*</span></label>
+              <label>ZIP Code <span style={{color:"var(--fg-muted)",fontWeight:400,fontSize:11}}>(optional)</span></label>
               <input
                 className="input"
                 type="text"
