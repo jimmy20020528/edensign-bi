@@ -225,9 +225,7 @@ def _user_prompt(
     prop_summary = ", ".join(parts[:-1]) + " " + parts[-1] if len(parts) > 1 else parts[0]
 
     payload: dict[str, Any] = {
-        "task": "Write a listing description for a staged property.",
-        "staging_design_style": style,
-        "staging_design_style_context": _style_context(style),
+        "task": "Write a listing description for a property.",
         "property": prop_summary,
         "agent_name": agent_name,
         "agent_contact": agent_contact,
