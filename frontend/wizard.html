@@ -256,6 +256,65 @@
   .classify-bar{display:flex;justify-content:space-between;align-items:center;
     padding:12px 0 4px;gap:12px;}
   .classify-hint{font-size:12px;color:var(--fg-subtle);}
+  /* ── Walk-through order strip ── */
+  .wt-wrap{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line);}
+  .wt-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .wt-title{font-size:11px;text-transform:uppercase;letter-spacing:.12em;
+    font-weight:600;color:var(--fg-subtle);}
+  .wt-sub{font-size:12px;color:var(--fg-subtle);}
+  .wt-flow{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;}
+  .wt-seg{border:2px solid var(--line);border-radius:12px;padding:8px 8px 4px;
+    background:var(--paper);}
+  .wt-seg-label{display:inline-block;font-size:10px;font-weight:600;color:#fff;
+    letter-spacing:.03em;padding:2px 8px;border-radius:99px;margin-bottom:7px;}
+  .wt-seg-imgs{display:flex;gap:6px;}
+  .wt-cell{position:relative;width:72px;height:54px;border-radius:7px;
+    background:var(--cream-soft);}
+  .wt-cell .wt-thumb{width:100%;height:100%;object-fit:cover;display:block;border-radius:7px;}
+  .wt-num{position:absolute;top:3px;left:3px;min-width:16px;height:16px;padding:0 3px;
+    border-radius:99px;background:rgba(17,17,17,.78);color:#fff;font-size:10px;
+    font-weight:600;line-height:16px;text-align:center;}
+  .wt-cell{cursor:zoom-in;}
+  /* Localized hover preview: pops just above the hovered thumbnail (~300px),
+     never a full-screen overlay, so it can't blanket the page. */
+  .wt-zoom{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;
+    transform:translateX(-50%);width:300px;max-width:300px;height:auto;border-radius:10px;
+    box-shadow:0 12px 40px rgba(0,0,0,.4);border:3px solid #fff;z-index:100;pointer-events:none;}
+  .wt-cell:hover .wt-zoom{display:block;}
+  /* ── Neighborhood section ── */
+  .nb-scores{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px;}
+  .nb-score{background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    padding:10px 16px;text-align:center;min-width:90px;}
+  .nb-score-num{font-size:22px;font-weight:700;color:var(--fg);line-height:1.1;}
+  .nb-score-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--fg-subtle);margin-top:3px;}
+  .nb-narr p{margin:8px 0;font-size:14px;line-height:1.6;color:var(--fg-muted);}
+  .nb-amen{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:14px;}
+  .nb-cat{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--paper);}
+  .nb-cat-h{font-size:12px;font-weight:600;letter-spacing:.03em;margin-bottom:8px;color:var(--fg);}
+  .nb-poi{display:flex;justify-content:space-between;gap:8px;font-size:13px;
+    color:var(--fg-muted);padding:3px 0;border-top:1px solid var(--line-soft);}
+  .nb-poi:first-of-type{border-top:none;}
+  .nb-poi .d{color:var(--fg-subtle);white-space:nowrap;font-variant-numeric:tabular-nums;}
+  /* ── Comparable Sales (CMA) ── */
+  .cma-stats{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;}
+  .cma-stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 16px;text-align:center;min-width:92px;}
+  .cma-num{font-size:20px;font-weight:700;color:var(--fg);line-height:1.15;}
+  .cma-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--fg-subtle);margin-top:3px;}
+  .cma-suggest{background:var(--cream-soft);border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:14px;color:var(--fg-muted);margin:6px 0 4px;}
+  .cma-pos{color:var(--fg-subtle);}
+  .cma-comps{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:14px;}
+  .cma-comp{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--paper);}
+  .cma-comp-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline;}
+  .cma-addr{font-size:13px;font-weight:600;color:var(--fg);}
+  .cma-price{font-size:14px;font-weight:700;color:var(--fg);white-space:nowrap;}
+  .cma-comp-sub{font-size:12px;color:var(--fg-subtle);margin-top:4px;}
+  .cma-comp.best{border-color:var(--orange,#c8763a);box-shadow:0 0 0 2px rgba(200,118,58,.18);}
+  .cma-comp.subject{grid-column:1/-1;border:1.5px solid var(--fg,#111);background:var(--cream-soft);}
+  .cma-badge.yours{background:var(--fg,#111);color:#fff;}
+  .cma-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;}
+  .cma-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;letter-spacing:.02em;white-space:nowrap;}
+  .cma-badge.best{background:var(--orange,#c8763a);color:#fff;}
+  .cma-badge.dim{background:var(--cream-soft);color:var(--fg-muted);border:1px solid var(--line);}
   .review-panel{background:var(--paper);border:1px solid var(--line);
     border-radius:18px;padding:24px 26px;margin-bottom:20px;}
   .review-header{display:flex;justify-content:space-between;align-items:flex-start;
@@ -310,8 +369,9 @@
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script type="text/babel" data-presets="react">
-const { useState, useMemo, useCallback, useRef } = React;
+const { useState, useMemo, useCallback, useRef, useEffect } = React;
 
 /* ── Icons & static maps (from Style Atlas) ── */
 /* ── Icons ── */
@@ -619,7 +679,7 @@ function StyleCard({s,selected,onSelect,onGoStaging}) {
   );
 }
 function MarketIntelSection({walkScore,fredMacro,schoolProfile,redfinMarket}) {
-  const hasAny = walkScore||fredMacro||schoolProfile||redfinMarket;
+  const hasAny = fredMacro||schoolProfile||redfinMarket;  // walkScore moved to Neighborhood
   if (!hasAny) return null;
 
   const ScoreBar = ({val,max=100,color="var(--primary)"}) => {
@@ -653,35 +713,9 @@ function MarketIntelSection({walkScore,fredMacro,schoolProfile,redfinMarket}) {
       <h4 style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:500,margin:"0 0 12px"}}>Market Intelligence</h4>
       <div style={{display:"flex",flexWrap:"wrap",gap:12}}>
 
-        {walkScore && (
-          <Card title="Walkability">
-            <div style={{marginBottom:8}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                <span style={{fontSize:12,color:"var(--fg-muted)"}}>Walk</span>
-                <span style={{fontSize:11,color:"var(--fg-subtle)"}}>{walkScore.walk_desc}</span>
-              </div>
-              <ScoreBar val={walkScore.walk_score} color="var(--primary)"/>
-            </div>
-            {walkScore.transit_score!=null && (
-              <div style={{marginBottom:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                  <span style={{fontSize:12,color:"var(--fg-muted)"}}>Transit</span>
-                  <span style={{fontSize:11,color:"var(--fg-subtle)"}}>{walkScore.transit_desc}</span>
-                </div>
-                <ScoreBar val={walkScore.transit_score} color="#6C63FF"/>
-              </div>
-            )}
-            {walkScore.bike_score!=null && (
-              <div>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                  <span style={{fontSize:12,color:"var(--fg-muted)"}}>Bike</span>
-                  <span style={{fontSize:11,color:"var(--fg-subtle)"}}>{walkScore.bike_desc}</span>
-                </div>
-                <ScoreBar val={walkScore.bike_score} color="#3CB371"/>
-              </div>
-            )}
-          </Card>
-        )}
+        {/* Walkability moved to the Neighborhood section (address-precise Walk
+            Score) to avoid a duplicate/conflicting display — Market Intelligence
+            used the ZIP centroid, which differs from the property's actual score. */}
 
         {fredMacro && (
           <Card title="Macro Economy">
@@ -957,6 +991,30 @@ function roomColor(room_type) {
   return ROOM_TYPE_COLORS[room_type] || {border:'#B8B494',labelBg:'rgba(140,135,100,0.85)',headerBg:'#F7F5ED'};
 }
 
+/* Downscale a photo to a max edge for the classify upload (cv-models only sees
+   224px anyway). Returns a small JPEG Blob; falls back to the original on error.
+   Originals stay untouched in `files` (used by the pipeline + the download). */
+function downscaleForUpload(file, maxDim = 1024, quality = 0.82) {
+  return new Promise((resolve) => {
+    try {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let {width, height} = img;
+        const m = Math.max(width, height);
+        if (m > maxDim) { const s = maxDim / m; width = Math.round(width*s); height = Math.round(height*s); }
+        const cv = document.createElement("canvas");
+        cv.width = width; cv.height = height;
+        cv.getContext("2d").drawImage(img, 0, 0, width, height);
+        cv.toBlob(b => resolve(b || file), "image/jpeg", quality);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    } catch { resolve(file); }
+  });
+}
+
 const ROOM_ICONS = {
   kitchen:'🍳', bedroom:'🛏', bathroom:'🛁', living:'🛋',
   living_bedroom:'🛋', living_dining:'🍽', dining:'🍽',
@@ -968,9 +1026,369 @@ function fmtRoom(r) {
   return (r || '').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
 
+/* Photo Walk-Through (results view): photos resequenced to read like a physical
+   tour of the home — front door first, room-to-room by visual overlap, bedrooms/
+   bathrooms never first, outdoor/aerial last. Built in the pipeline from the
+   user-confirmed room groups (result.walkthrough.segments). Hover a photo to
+   enlarge; download the set renamed in order as a ZIP. */
+function WalkthroughGallery({walkthrough, files}) {
+  // Editable local copy of the order — drag a photo to reorder it (within or
+  // across rooms); drag a room (by its label) to reorder whole rooms. The current
+  // (reordered) order is what the download uses.
+  const [segs, setSegs] = useState(() => (walkthrough?.segments || []).map(s => ({...s, photo_indices:[...(s.photo_indices||[])]})));
+  useEffect(() => {
+    setSegs((walkthrough?.segments || []).map(s => ({...s, photo_indices:[...(s.photo_indices||[])]})));
+  }, [walkthrough]);
+  const dragRef = useRef(null);          // {type:'photo'|'room', room, pos}
+  const [over, setOver] = useState(null); // {type, room, pos} for highlight
+
+  if (!walkthrough?.segments?.length || !files?.length) return null;
+
+  const stopNum = {};
+  let c = 0;
+  segs.forEach(s => (s.photo_indices || []).forEach(idx => { stopNum[idx] = ++c; }));
+  const total = c;
+  const urlFor = (idx) => files[idx] ? URL.createObjectURL(files[idx]) : null;
+
+  const movePhoto = (fromRoom, fromPos, toRoom, toPos) => setSegs(prev => {
+    const next = prev.map(s => ({...s, photo_indices:[...s.photo_indices]}));
+    const [photo] = next[fromRoom].photo_indices.splice(fromPos, 1);
+    if (photo == null) return prev;
+    // After the removal, splice at toPos: a forward drag lands AFTER the target,
+    // a backward drag lands before it — both intuitive, and adjacent swaps work.
+    next[toRoom].photo_indices.splice(toPos, 0, photo);
+    return next.filter(s => s.photo_indices.length);       // drop emptied rooms
+  });
+
+  const moveRoom = (from, to) => setSegs(prev => {
+    if (from === to) return prev;
+    const next = [...prev];
+    const [room] = next.splice(from, 1);
+    next.splice(to, 0, room);  // forward drag → after target; backward → before
+    return next;
+  });
+
+  const download = async () => {
+    if (typeof JSZip === "undefined") return;
+    const zip = new JSZip();
+    let n = 1;
+    for (const s of segs) {
+      for (const idx of (s.photo_indices || [])) {
+        const f = files[idx];
+        if (!f) continue;
+        const ext = (f.name && f.name.includes(".")) ? f.name.split(".").pop() : "jpg";
+        const room = (s.room_type || "photo").replace(/_/g, "-");
+        zip.file(`${String(n).padStart(2,"0")}_${room}.${ext}`, f);
+        n++;
+      }
+    }
+    const blob = await zip.generateAsync({type:"blob"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "walkthrough_photos.zip";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+
+  return (
+    <section style={{marginTop:32}}>
+      <header className="page-head">
+        <div>
+          <h2 className="page-title" style={{fontSize:30}}>Photo Walk-Through</h2>
+          <p className="page-sub">{segs.length} room{segs.length!==1?'s':''} · {total} photos — front door first. Drag a photo to reorder it; drag a room's label to move the whole room. Hover to enlarge.</p>
+        </div>
+        <button className="btn primary" onClick={download}>⬇ Download photos in order</button>
+      </header>
+      <div className="wt-flow">
+        {segs.map((seg, si) => {
+          const gc = roomColor(seg.room_type);
+          const roomOver = over && over.type === 'room' && over.room === si;
+          return (
+            <div key={seg.group_id ?? si} className="wt-seg"
+              style={{borderColor: roomOver ? '#4a90e2' : gc.border}}
+              onDragOver={e => { if (dragRef.current?.type === 'room') { e.preventDefault(); setOver({type:'room', room:si}); } }}
+              onDrop={e => { if (dragRef.current?.type === 'room') { e.preventDefault(); moveRoom(dragRef.current.room, si); dragRef.current = null; setOver(null); } }}>
+              <div className="wt-seg-label" draggable title="Drag to move this room"
+                style={{background:gc.labelBg, cursor:'grab'}}
+                onDragStart={e => { dragRef.current = {type:'room', room:si}; e.dataTransfer.effectAllowed='move'; }}
+                onDragEnd={() => { dragRef.current = null; setOver(null); }}>
+                ⠿ {ROOM_ICONS[seg.room_type]||'•'} {fmtRoom(seg.room_type)||'Space'}
+              </div>
+              <div className="wt-seg-imgs">
+                {(seg.photo_indices || []).map((idx, pi) => {
+                  const u = urlFor(idx);
+                  if (!u) return null;
+                  const cellOver = over && over.type === 'photo' && over.room === si && over.pos === pi;
+                  return (
+                    <div key={idx} className="wt-cell" draggable title={`Stop ${stopNum[idx]} — drag to reorder`}
+                      style={cellOver ? {outline:'2px solid #4a90e2', outlineOffset:1} : {}}
+                      onDragStart={e => { dragRef.current = {type:'photo', room:si, pos:pi}; e.stopPropagation(); e.dataTransfer.effectAllowed='move'; }}
+                      onDragEnd={() => { dragRef.current = null; setOver(null); }}
+                      onDragOver={e => { if (dragRef.current?.type === 'photo') { e.preventDefault(); e.stopPropagation(); setOver({type:'photo', room:si, pos:pi}); } }}
+                      onDrop={e => { if (dragRef.current?.type === 'photo') { e.preventDefault(); e.stopPropagation(); const d = dragRef.current; movePhoto(d.room, d.pos, si, pi); dragRef.current = null; setOver(null); } }}>
+                      <img className="wt-thumb" src={u} alt=""/>
+                      <span className="wt-num">{stopNum[idx]}</span>
+                      <img className="wt-zoom" src={u} alt=""/>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* Neighborhood: buyer-facing "what's it like to live here" — nearby amenities,
+   walkability, and a grounded narrative. Self-contained: fetches
+   /analyze/neighborhood on mount from the address. Renders nothing if there's no
+   address or the lookup fails (purely additive to the results view). */
+const NB_CATS = {
+  dining:     {icon:"🍽", label:"Dining"},
+  recreation: {icon:"🌳", label:"Parks & Recreation"},
+  grocery:    {icon:"🛒", label:"Grocery"},
+  fitness:    {icon:"💪", label:"Fitness"},
+  schools:    {icon:"🎓", label:"Schools"},
+  shopping:   {icon:"🛍", label:"Shopping"},
+  transit:    {icon:"🚌", label:"Transit"},
+};
+function NeighborhoodSection({address, biBase, marketContext}) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState(null);
+  useEffect(() => {
+    if (!address || address.trim().length < 6) return;
+    let cancelled = false;
+    setLoading(true); setErr(null); setData(null);
+    fetch(`${biBase}/analyze/neighborhood`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({address, include_narrative:true, market_context:marketContext||null}),
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error("HTTP "+r.status)))
+      .then(j => { if(!cancelled) setData(j); })
+      .catch(e => { if(!cancelled) setErr(e.message); })
+      .finally(() => { if(!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [address, biBase]);
+
+  if (!address) return null;
+  const nb = data?.neighborhood;
+  const narr = data?.narrative?.narrative;
+  const ws = nb?.walk_score;
+  const amen = nb?.amenities || {};
+  const cats = Object.keys(amen).filter(c => c !== "_total" && NB_CATS[c]);
+
+  return (
+    <section style={{marginTop:32}}>
+      <header className="page-head">
+        <div>
+          <h2 className="page-title" style={{fontSize:30}}>Neighborhood</h2>
+          <p className="page-sub">What it's like to live here — amenities, walkability, and lifestyle.</p>
+        </div>
+      </header>
+      {loading && <div style={{fontSize:13,color:"var(--fg-subtle)",padding:"8px 0"}}>Looking up the neighborhood…</div>}
+      {err && !loading && <div style={{fontSize:13,color:"var(--fg-subtle)",padding:"8px 0"}}>Neighborhood data unavailable.</div>}
+      {nb && !loading && (
+        <>
+          {ws && (ws.walk!=null || ws.transit!=null || ws.bike!=null) && (
+            <div className="nb-scores">
+              {ws.walk!=null    && <div className="nb-score"><div className="nb-score-num">{ws.walk}</div><div className="nb-score-lbl">Walk</div></div>}
+              {ws.transit!=null && <div className="nb-score"><div className="nb-score-num">{ws.transit}</div><div className="nb-score-lbl">Transit</div></div>}
+              {ws.bike!=null    && <div className="nb-score"><div className="nb-score-num">{ws.bike}</div><div className="nb-score-lbl">Bike</div></div>}
+            </div>
+          )}
+          {narr && (
+            <div className="nb-narr">
+              {narr.overview && <p>{narr.overview}</p>}
+              {narr.amenities_lifestyle && <p>{narr.amenities_lifestyle}</p>}
+              {narr.getting_around && <p>{narr.getting_around}</p>}
+              {narr.market_note && <p>{narr.market_note}</p>}
+            </div>
+          )}
+          {cats.length > 0 && (
+            <div className="nb-amen">
+              {cats.map(c => (
+                <div key={c} className="nb-cat">
+                  <div className="nb-cat-h">{NB_CATS[c].icon} {NB_CATS[c].label}</div>
+                  {amen[c].slice(0,5).map((p,i) => (
+                    <div key={i} className="nb-poi"><span>{p.name}</span><span className="d">{p.distance_mi} mi</span></div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+/* Comparable Sales (CMA): recent nearby sold comps + suggested price range, from
+   Redfin via /analyze/comps. Self-contained: fetches on mount from zipcode +
+   subject specs. Renders nothing without a ZIP or if the lookup fails. Additive. */
+function CompsSection({zipcode, address, propertyType, bedrooms, bathrooms, sqft, yearBuilt, listingPrice, biBase}) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState(null);
+  const zc = (zipcode || "").trim();
+  useEffect(() => {
+    if (zc.length < 5) return;
+    let cancelled = false;
+    setLoading(true); setErr(null); setData(null);
+    const num = (v) => (v !== "" && v != null && !isNaN(Number(v))) ? Number(v) : null;
+    fetch(`${biBase}/analyze/comps`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        zipcode: zc, address: address || null, property_type: propertyType || null,
+        bedrooms: num(bedrooms), bathrooms: num(bathrooms),
+        sqft: num(sqft), year_built: num(yearBuilt), listing_price: num(listingPrice), include_narrative: true,
+      }),
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error("HTTP "+r.status)))
+      .then(j => { if(!cancelled) setData(j); })
+      .catch(e => { if(!cancelled) setErr(e.message); })
+      .finally(() => { if(!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [zc, address, propertyType, bedrooms, bathrooms, sqft, yearBuilt, listingPrice, biBase]);
+
+  if (zc.length < 5) return null;
+  const cma = data?.cma;
+  const narr = data?.narrative?.narrative;
+  const pos = cma?.price_position;
+  const sr = cma?.suggested_range;
+  const money = (n) => n == null ? "—" : "$" + Math.round(n).toLocaleString();
+  const hasComps = cma?.comps?.length > 0;
+
+  return (
+    <section style={{marginTop:32}}>
+      <header className="page-head">
+        <div>
+          <h2 className="page-title" style={{fontSize:30}}>Comparable Sales</h2>
+          <p className="page-sub">Comparable nearby properties and a suggested price range.</p>
+        </div>
+      </header>
+      {cma?.selection && hasComps && (
+        <div style={{fontSize:12,color:"var(--fg-subtle)",margin:"2px 0 8px"}}>
+          {cma.comp_count} comparables · {cma.selection.tier}
+          {cma.selection.active > 0 ? ` · ${cma.selection.active} active` : ""}
+          {" · from "}{cma.selection.pool}{" recent sales/listings nearby"}
+        </div>
+      )}
+      {loading && <div style={{fontSize:13,color:"var(--fg-subtle)",padding:"8px 0"}}>Pulling comparable sales…</div>}
+      {err && !loading && <div style={{fontSize:13,color:"var(--fg-subtle)",padding:"8px 0"}}>Comparable sales unavailable.</div>}
+      {cma && !loading && !hasComps && <div style={{fontSize:13,color:"var(--fg-subtle)",padding:"8px 0"}}>No comparable sales found for this ZIP.</div>}
+      {hasComps && !loading && (
+        <>
+          <div className="cma-stats">
+            <div className="cma-stat"><div className="cma-num">{cma.comp_count}</div><div className="cma-lbl">Comparables</div></div>
+            {cma.avg_ppsf != null && <div className="cma-stat"><div className="cma-num">${cma.avg_ppsf}</div><div className="cma-lbl">Avg $/SF</div></div>}
+            {cma.avg_dom != null && <div className="cma-stat"><div className="cma-num">{cma.avg_dom}</div><div className="cma-lbl">Avg Days on Mkt</div></div>}
+            {cma.price_range && <div className="cma-stat"><div className="cma-num" style={{fontSize:15}}>{money(cma.price_range.low)}–{money(cma.price_range.high)}</div><div className="cma-lbl">Sold Range</div></div>}
+          </div>
+          {sr && (
+            <div className="cma-suggest">
+              Suggested list range <b>{money(sr.low)} – {money(sr.high)}</b>{" · "}anchor <b>{money(sr.anchor)}</b>
+              {pos && <span className="cma-pos"> · subject is {pos.label} ({pos.delta_pct>0?"+":""}{pos.delta_pct}% on $/SF)</span>}
+            </div>
+          )}
+          {narr && (narr.market_positioning || narr.pricing_strategy) && (
+            <div className="nb-narr">
+              <div style={{fontSize:11,textTransform:"uppercase",letterSpacing:".12em",color:"var(--fg-subtle)",fontWeight:600,marginTop:6}}>Market Positioning</div>
+              {narr.market_positioning && <p>{narr.market_positioning}</p>}
+              {narr.pricing_strategy && <p>{narr.pricing_strategy}</p>}
+            </div>
+          )}
+          <div className="cma-comps">
+            {(() => { const s = cma.subject || {}; return (
+              <div className="cma-comp subject">
+                <div className="cma-comp-top">
+                  <span className="cma-addr">Your home{address ? ` · ${address.split(',')[0]}` : ''}</span>
+                  <span className="cma-price">{s.listing_price ? money(s.listing_price) : '—'}</span>
+                </div>
+                <div className="cma-comp-sub"><b>Your listing — compare against the comps below</b></div>
+                <div className="cma-comp-sub">
+                  {s.beds ?? '?'}bd / {s.baths ?? '?'}ba / {s.sqft ? Math.round(s.sqft).toLocaleString() : '?'} sqft
+                  {s.ppsf != null ? ` · $${s.ppsf}/SF` : ''}{s.year_built ? ` · Built ${Math.round(s.year_built)}` : ''}
+                </div>
+                <div className="cma-badges"><span className="cma-badge yours">Your home</span></div>
+              </div>
+            ); })()}
+            {cma.comps.map((c, i) => {
+              const badges = c.badges || [];
+              const isBest = badges.some(b => b.key === 'best');
+              return (
+              <div key={i} className={"cma-comp"+(isBest?" best":"")}>
+                <div className="cma-comp-top">
+                  <span className="cma-addr">{c.address}</span>
+                  <span className="cma-price">{money(c.price)}</span>
+                </div>
+                <div className="cma-comp-sub">
+                  <b>{c.listing_status === 'active' ? 'Active' : (c.sold_date ? `Sold ${c.sold_date}` : 'Sold')}</b>
+                  {c.distance_mi != null ? ` · ${c.distance_mi} mi away` : ""}
+                </div>
+                <div className="cma-comp-sub">
+                  {c.beds ?? "?"}bd / {c.baths ?? "?"}ba / {c.sqft ? Math.round(c.sqft).toLocaleString() : "?"} sqft · ${c.ppsf ?? "?"}/SF
+                  {c.year_built ? ` · Built ${Math.round(c.year_built)}` : ""}
+                </div>
+                {badges.length > 0 && (
+                  <div className="cma-badges">
+                    {badges.map((b, j) => (
+                      <span key={j} className={"cma-badge "+(b.key==='best'?'best':'dim')}>
+                        {b.key==='best'?'★ ':''}{b.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+/* Buyer Appeal: the listing review's "who buys this & why" paragraph, grounded in
+   the home report's real features + specs. Fetches /analyze/buyer-appeal on mount. */
+function BuyerAppealSection({homeReport, market, specs, biBase}) {
+  const [text, setText] = useState(null);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!homeReport || !homeReport.overall_quality_rating) return;
+    let cancelled = false;
+    setLoading(true); setText(null);
+    fetch(`${biBase}/analyze/buyer-appeal`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({home_report: homeReport, market: market || null, specs: specs || null}),
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error("HTTP "+r.status)))
+      .then(j => { if(!cancelled) setText(j.buyer_appeal || ""); })
+      .catch(() => { if(!cancelled) setText(""); })
+      .finally(() => { if(!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [homeReport, biBase]);
+
+  if (!homeReport || !homeReport.overall_quality_rating) return null;
+  return (
+    <section style={{marginTop:32}}>
+      <header className="page-head">
+        <div>
+          <h2 className="page-title" style={{fontSize:30}}>Buyer Appeal</h2>
+          <p className="page-sub">Who this home is for, and the features that drive the most interest.</p>
+        </div>
+      </header>
+      {loading && <div style={{fontSize:13,color:"var(--fg-subtle)",padding:"8px 0"}}>Analyzing buyer appeal…</div>}
+      {text && <div className="nb-narr"><p>{text}</p></div>}
+    </section>
+  );
+}
+
 function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcode, onRun, running,
                       classificationResult, classificationLoading, onClassify, onReview,
-                      bedrooms, setBedrooms, bathrooms, setBathrooms, sqft, setSqft,
+                      bedrooms, setBedrooms, bathrooms, setBathrooms, sqft, setSqft, yearBuilt, setYearBuilt,
                       propertyType, setPropertyType, listingPrice, setListingPrice,
                       agentName, setAgentName, agentContact, setAgentContact,
                       readOnly, onRemoveFile}) {
@@ -981,7 +1399,7 @@ function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcod
     const next = [...files];
     for (const f of fileList) {
       if (!f.type.startsWith('image/')) continue;
-      if (next.length >= 30) break;
+      if (next.length >= 60) break;
       next.push(f);
     }
     setFiles(next);
@@ -1011,7 +1429,7 @@ function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcod
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
           <div className="upload-title">{files.length === 0 ? "Drop photos here or click to choose" : `${files.length} photo${files.length>1?"s":""} ready`}</div>
-          <div className="upload-hint">JPG / PNG, up to 30 photos</div>
+          <div className="upload-hint">JPG / PNG, up to 60 photos</div>
           <input ref={inputRef} type="file" multiple accept="image/*" onChange={(e)=>{addFiles(e.target.files);e.target.value="";}}/>
         </div>
       )}
@@ -1097,7 +1515,7 @@ function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcod
         </div>
       )}
       {!readOnly && (
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"12px",marginTop:12}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"12px",marginTop:12}}>
           <div className="field">
             <label>Beds</label>
             <input className="input" type="number" min="0" max="20" placeholder="3"
@@ -1112,6 +1530,11 @@ function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcod
             <label>Sqft</label>
             <input className="input" type="number" min="0" placeholder="1200"
               value={sqft} onChange={e=>setSqft(e.target.value)}/>
+          </div>
+          <div className="field">
+            <label>Year Built <span style={{color:"var(--fg-muted)",fontWeight:400,fontSize:11}}>(optional)</span></label>
+            <input className="input" type="number" min="1800" max="2030" placeholder="1990"
+              value={yearBuilt} onChange={e=>setYearBuilt(e.target.value)}/>
           </div>
           <div className="field">
             <label>Type</label>
@@ -1163,6 +1586,8 @@ function GroupingEditor({result, files, onConfirm, onClose}) {
   const [hoverPhoto, setHoverPhoto] = useState(null);
   const [hoverPos, setHoverPos] = useState({x:0, y:0});
   const [addPickerOpen, setAddPickerOpen] = useState(false);
+  const [deleted, setDeleted] = useState(() => new Set());  // photos marked for removal (applied on Confirm)
+  const toggleDelete = (idx) => setDeleted(prev => { const n = new Set(prev); n.has(idx) ? n.delete(idx) : n.add(idx); return n; });
   const addPickerRef = useRef(null);
   React.useEffect(() => {
     if (!addPickerOpen) return;
@@ -1215,13 +1640,14 @@ function GroupingEditor({result, files, onConfirm, onClose}) {
     const newGroups = [];
     let counter = 1;
     for (const [, g] of Object.entries(groups).sort((a,b) => a[1].room_type.localeCompare(b[1].room_type))) {
-      if (!g.photo_indices.length) continue;
+      const idxs = g.photo_indices.filter(i => !deleted.has(i));  // drop photos marked for removal
+      if (!idxs.length) continue;
       const gid = counter++;
-      newGroups.push({group_id:gid, room_type:g.room_type, occupancy:g.occupancy, photo_indices:[...g.photo_indices]});
-      for (const idx of g.photo_indices)
+      newGroups.push({group_id:gid, room_type:g.room_type, occupancy:g.occupancy, photo_indices:[...idxs]});
+      for (const idx of idxs)
         newPhotos[idx] = {...newPhotos[idx], group_id:gid, room_type:g.room_type, occupancy:g.occupancy};
     }
-    onConfirm({photos:newPhotos, groups:newGroups});
+    onConfirm({photos:newPhotos, groups:newGroups}, [...deleted]);
   };
 
   if (!result) return null;
@@ -1332,25 +1758,42 @@ function GroupingEditor({result, files, onConfirm, onClose}) {
                     minHeight: TH + 16}}>
                     {g.photo_indices.map(idx => {
                       const isSel = selected === idx;
+                      const isDel = deleted.has(idx);
                       return (
-                        <div key={idx} draggable
+                        <div key={idx} draggable={!isDel}
                           style={{position:'relative',width:TW,height:TH,borderRadius:8,overflow:'visible',
                             border: isSel ? '2.5px solid #4a90e2' : '2.5px solid transparent',
-                            cursor:'grab',flex:'none',transition:'width 0.18s,height 0.18s'}}
+                            cursor: isDel ? 'default' : 'grab',flex:'none',transition:'width 0.18s,height 0.18s',
+                            opacity: isDel ? 0.4 : 1}}
                           onMouseEnter={e => {setHoverPhoto(idx); setHoverPos({x:e.clientX,y:e.clientY});}}
                           onMouseMove={e => setHoverPos({x:e.clientX,y:e.clientY})}
                           onMouseLeave={() => setHoverPhoto(null)}
-                          onDragStart={e => {setDragging(idx); setSelected(null); setHoverPhoto(null); e.dataTransfer.effectAllowed='move';}}
+                          onDragStart={e => {if(isDel){e.preventDefault();return;} setDragging(idx); setSelected(null); setHoverPhoto(null); e.dataTransfer.effectAllowed='move';}}
                           onDragEnd={() => {setDragging(null); setDropTarget(null);}}
-                          onClick={e => {e.stopPropagation(); setSelected(p => p===idx ? null : idx);}}>
-                          <div style={{width:'100%',height:'100%',borderRadius:6,overflow:'hidden'}}>
+                          onClick={e => {e.stopPropagation(); if(!isDel) setSelected(p => p===idx ? null : idx);}}>
+                          <div style={{width:'100%',height:'100%',borderRadius:6,overflow:'hidden',
+                            filter: isDel ? 'grayscale(1)' : 'none'}}>
                             {files[idx] && <img src={URL.createObjectURL(files[idx])} alt=""
                               style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
                           </div>
-                          {isSel && (
+                          {isSel && !isDel && (
                             <div style={{position:'absolute',top:-4,right:-4,background:'#4a90e2',
                               borderRadius:'50%',width:16,height:16,display:'flex',alignItems:'center',
                               justifyContent:'center',fontSize:9,color:'#fff',fontWeight:700,zIndex:2}}>✓</div>
+                          )}
+                          <button type="button" title={isDel ? 'Restore photo' : 'Remove photo'}
+                            onClick={e => {e.stopPropagation(); toggleDelete(idx);}}
+                            onMouseDown={e => e.stopPropagation()}
+                            style={{position:'absolute',top:-7,left:-7,width:18,height:18,borderRadius:'50%',
+                              border:'none',cursor:'pointer',zIndex:3,fontSize:11,fontWeight:700,lineHeight:1,
+                              color:'#fff',background: isDel ? '#6b8e61' : 'rgba(180,40,40,.92)',
+                              display:'flex',alignItems:'center',justifyContent:'center'}}>
+                            {isDel ? '↺' : '×'}
+                          </button>
+                          {isDel && (
+                            <div style={{position:'absolute',inset:0,borderRadius:6,display:'flex',
+                              alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:700,
+                              color:'#fff',background:'rgba(120,30,30,.32)',pointerEvents:'none'}}>REMOVED</div>
                           )}
                         </div>
                       );
@@ -1437,6 +1880,20 @@ function ProgressIndicator({step}) {
   );
 }
 
+/* UAD decimal (1.0 best … 6.9 worst) → customer-facing 1-10 (10 best).
+   Backend stays UAD-driven; this is display-only. Balanced curve: Q1/C1→10,
+   Q4/C4→6.4, Q6/C6→4.0 (chosen with the team — standard well-kept home reads ~7).
+   Keeps the source decimal precision (no integer rounding); shown to 1 decimal. */
+function uadTo10(decimal) {
+  if (decimal == null || isNaN(decimal)) return null;
+  const s = 10 - (decimal - 1) * 1.2;
+  return Math.max(1, Math.min(10, Math.round(s * 100) / 100));
+}
+function fmt10(decimal) {
+  const v = uadTo10(decimal);
+  return v == null ? null : v.toFixed(1);
+}
+
 function HomeReportDisplay({hr}) {
   if (!hr || !hr.overall_quality_rating) return null;
   const qDesc = {
@@ -1457,19 +1914,19 @@ function HomeReportDisplay({hr}) {
       <header className="page-head" style={{marginTop:32}}>
         <div>
           <h2 className="page-title" style={{fontSize:30}}>Property Assessment</h2>
-          <p className="page-sub">UAD-calibrated quality and condition ratings from your photos.</p>
+          <p className="page-sub">Quality and condition scored 1–10 from your photos.</p>
         </div>
       </header>
       <div className="hr-card">
         <div className="hr-overall">
           <div className="hr-grade">
             <div className="hr-grade-label">Quality</div>
-            <div className="hr-grade-val">{hr.overall_quality_rating}<span className="dec">{hr.overall_quality_decimal?.toFixed(1)}</span></div>
+            <div className="hr-grade-val">{fmt10(hr.overall_quality_decimal) ?? hr.overall_quality_rating}<span className="dec">/ 10</span></div>
             <div className="hr-grade-desc">{qDesc[hr.overall_quality_rating] || ""}</div>
           </div>
           <div className="hr-grade">
             <div className="hr-grade-label">Condition</div>
-            <div className="hr-grade-val">{hr.overall_condition_rating}<span className="dec">{hr.overall_condition_decimal?.toFixed(1)}</span></div>
+            <div className="hr-grade-val">{fmt10(hr.overall_condition_decimal) ?? hr.overall_condition_rating}<span className="dec">/ 10</span></div>
             <div className="hr-grade-desc">{cDesc[hr.overall_condition_rating] || ""}</div>
           </div>
         </div>
@@ -1477,7 +1934,7 @@ function HomeReportDisplay({hr}) {
           <div key={i} className="room-card">
             <div className="room-head">
               <div className="room-name">{r.room_type.replace(/_/g," ")}</div>
-              <div className="room-rating">{r.quality_rating} · {r.condition_rating}</div>
+              <div className="room-rating">Quality {fmt10(r.quality_decimal) ?? r.quality_rating} · Condition {fmt10(r.condition_decimal) ?? r.condition_rating}</div>
             </div>
             <div className="room-rationale">{r.quality_rationale}</div>
             {r.notable_features?.length > 0 && (
@@ -1521,7 +1978,7 @@ function ListingDisplay({text, style, loading, error}) {
     <div className="hr-card" style={{marginTop:32, color:"#b00"}}>Listing generation failed: {error}</div>
   );
   if (!text || text.startsWith('[listing_error') || text.startsWith('[listing_exception')) return (
-    <div className="hr-card" style={{marginTop:32, opacity:0.7}}>Pick a writing style above and click "Generate listing".</div>
+    <div className="hr-card" style={{marginTop:32, opacity:0.7}}>Preparing your listing description… or pick a writing style above and click "Regenerate listing".</div>
   );
   const copy = () => {
     navigator.clipboard.writeText(text).then(()=>{
@@ -1849,7 +2306,9 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
 
 /* ── App ── */
 function App() {
-  const [apiBase] = useState("https://t88n3smkxwmj09-8002.proxy.runpod.net");           // Tool service (Wizard's backend)
+  // Tool service (Wizard's backend). Proxied through this origin (BI :8000) so
+  // only one RunPod port needs to be exposed for the demo.
+  const [apiBase] = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
   const [biBase]  = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
   const [page, setPage] = useState("wizard");
   const [files, setFiles] = useState([]);
@@ -1858,6 +2317,7 @@ function App() {
   const [bedrooms, setBedrooms] = useState("");
   const [bathrooms, setBathrooms] = useState("");
   const [sqft, setSqft] = useState("");
+  const [yearBuilt, setYearBuilt] = useState("");
   const [propertyType, setPropertyType] = useState("residential");
   const [listingPrice, setListingPrice] = useState("");
   const [agentName, setAgentName] = useState("");
@@ -1874,15 +2334,23 @@ function App() {
   const [classificationLoading, setClassificationLoading] = useState(false);
   const [classificationError, setClassificationError] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  // Async auto-classify: runs in the background when photos are added, so the
+  // user never waits on a blocking "Classify" step.
+  const filesRef = useRef(files); filesRef.current = files;
+  const filesSigRef = useRef("");
+  const skipAutoClassifyRef = useRef(false);  // set when files change due to an editor edit (don't re-classify)
+  const autoTimerRef = useRef(null);
+  const classifyInFlightRef = useRef(false);
+  const classifyRerunRef = useRef(false);
   const [stagingModalStyle, setStagingModalStyle] = useState(null);
   const [stagingTop1, setStagingTop1] = useState("");
-  const [stagingBase] = useState("https://t88n3smkxwmj09-8000.proxy.runpod.net");
+  const [stagingBase] = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
   const [submissionId, setSubmissionId] = useState(null);
   const [listingText, setListingText] = useState(null);
   const [listingStyle, setListingStyle] = useState(null);
   const [listingLoadingId, setListingLoadingId] = useState(null);
   const [listingError, setListingError] = useState(null);
-  const [listingTemplate, setListingTemplate] = useState("word_optimized");
+  const [listingTemplate, setListingTemplate] = useState("audience_first");
   const [listingWhy, setListingWhy] = useState(null);
   const [whyOpen, setWhyOpen] = useState(false);
 
@@ -1919,6 +2387,12 @@ function App() {
       if (agentName.trim()) form.append("agent_name", agentName.trim());
       if (agentContact.trim()) form.append("agent_contact", agentContact.trim());
       files.forEach(f => form.append("files", f, f.name));
+      // Send the user-confirmed room grouping so the pipeline can build the
+      // walk-through order from it (not the raw, possibly-wrong classification).
+      if (classificationResult?.photos) {
+        const rg = classificationResult.photos.map(p => ({index:p.index, room_type:p.room_type, group_id:p.group_id}));
+        form.append("room_groups", JSON.stringify(rg));
+      }
       const r = await fetch(`${apiBase}/pipeline/run`, {method:"POST", body: form});
       if (!r.ok) {
         const t = await r.text();
@@ -1993,28 +2467,61 @@ function App() {
     }
   };
 
+  // Auto-generate a listing description as soon as results are ready (default
+  // "Audience-First" style). The writing-style buttons stay; "Regenerate listing"
+  // re-runs with the picked style. Fires once per pipeline result.
+  const autoListingRef = useRef(null);
+  useEffect(() => {
+    if (!result || !mapped?.styles?.length) return;
+    if (autoListingRef.current === result || listingLoadingId !== null) return;
+    autoListingRef.current = result;
+    const so = mapped.styles.find(x => x.id === activeStyleId) || mapped.styles[0];
+    if (so) generateListing(so);
+  }, [result, mapped]);
+
   const classifyRooms = async () => {
+    // Guard against overlap: if a classify is already running, just queue a rerun.
+    if (classifyInFlightRef.current) { classifyRerunRef.current = true; return; }
+    const cur = filesRef.current;           // always classify the LATEST file set
+    if (!cur.length) return;
+    classifyInFlightRef.current = true;
     setClassificationLoading(true);
     setClassificationError(null);
     try {
+      // Downscale for a fast upload (cv-models only needs ~224px); originals kept.
+      const blobs = await Promise.all(cur.map(f => downscaleForUpload(f)));
       const form = new FormData();
-      files.forEach(f => form.append("files", f, f.name));
+      blobs.forEach((b, i) => form.append("files", b, cur[i].name || `photo${i}.jpg`));
       const r = await fetch(`${apiBase}/classify-rooms`, {method:"POST", body:form});
       if (!r.ok) {
-        const body = await r.json().catch(()=>({}));
-        if (r.status === 503) {
-          setClassificationError("Room classification service is not running.");
-          return;
-        }
+        await r.json().catch(()=>({}));
+        if (r.status === 503) { setClassificationError("Room classification service is not running."); return; }
         throw new Error(`HTTP ${r.status}`);
       }
       setClassificationResult(await r.json());
     } catch(e) {
       setClassificationError(e.message);
     } finally {
+      classifyInFlightRef.current = false;
       setClassificationLoading(false);
+      // Files changed mid-classify (user added/removed more) → re-run on the latest set.
+      if (classifyRerunRef.current) { classifyRerunRef.current = false; classifyRooms(); }
     }
   };
+
+  // Async auto-classify: whenever the photo set actually changes (new photos
+  // added / removed in the upload zone), kick off classify in the background —
+  // debounced, and skipped when the change came from a room-editor edit.
+  useEffect(() => {
+    const sig = files.map(f => `${f.name}:${f.size}`).join("|");
+    if (files.length === 0) { filesSigRef.current = ""; return; }
+    if (skipAutoClassifyRef.current) { skipAutoClassifyRef.current = false; filesSigRef.current = sig; return; }
+    if (sig === filesSigRef.current || reviewOpen) return;
+    filesSigRef.current = sig;
+    clearTimeout(autoTimerRef.current);
+    autoTimerRef.current = setTimeout(() => classifyRooms(), 600);
+    return () => clearTimeout(autoTimerRef.current);
+  }, [files, reviewOpen]);
 
   const onSelectCard = useCallback(id => {
     setSelectedCard(id);
@@ -2046,6 +2553,7 @@ function App() {
             bedrooms={bedrooms} setBedrooms={setBedrooms}
             bathrooms={bathrooms} setBathrooms={setBathrooms}
             sqft={sqft} setSqft={setSqft}
+            yearBuilt={yearBuilt} setYearBuilt={setYearBuilt}
             propertyType={propertyType} setPropertyType={setPropertyType}
             listingPrice={listingPrice} setListingPrice={setListingPrice}
             agentName={agentName} setAgentName={setAgentName}
@@ -2065,7 +2573,29 @@ function App() {
                 <GroupingEditor
                   result={classificationResult}
                   files={files}
-                  onConfirm={(edited) => {setClassificationResult(edited); setReviewOpen(false);}}
+                  onConfirm={(edited, deletedIndices) => {
+                    const del = new Set(deletedIndices || []);
+                    if (del.size) {
+                      // Apply deletions atomically: drop the photos from `files` AND
+                      // re-index the classification so files[i] stays aligned with index i
+                      // (the pipeline/walk-through rely on that alignment).
+                      const survivors = files.map((_, i) => i).filter(i => !del.has(i));
+                      const remap = new Map(survivors.map((oldI, newI) => [oldI, newI]));
+                      const newFiles = survivors.map(i => files[i]);
+                      const newPhotos = edited.photos
+                        .filter(p => !del.has(p.index))
+                        .map(p => ({...p, index: remap.get(p.index)}));
+                      const newGroups = edited.groups
+                        .map(g => ({...g, photo_indices: g.photo_indices.filter(i => !del.has(i)).map(i => remap.get(i))}))
+                        .filter(g => g.photo_indices.length);
+                      skipAutoClassifyRef.current = true;  // files changed by an edit — keep edits, don't re-classify
+                      setFiles(newFiles);
+                      setClassificationResult({photos: newPhotos, groups: newGroups});
+                    } else {
+                      setClassificationResult(edited);
+                    }
+                    setReviewOpen(false);
+                  }}
                   onClose={()=>setReviewOpen(false)}
                 />
               )}
@@ -2121,6 +2651,13 @@ function App() {
                 redfinMarket={mapped.redfinMarket}
               />
 
+              <NeighborhoodSection address={result?.address || location} biBase={biBase} marketContext={null}/>
+
+              <CompsSection zipcode={result?.zipcode || zipcode} address={result?.address || location} propertyType={propertyType} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} yearBuilt={yearBuilt} listingPrice={listingPrice} biBase={biBase}/>
+
+              <BuyerAppealSection homeReport={result?.home_report} market={result?.bi_analysis} biBase={biBase}
+                specs={{beds:bedrooms||null, baths:bathrooms||null, sqft:sqft||null, year_built:yearBuilt||null, listing_price:listingPrice||null}}/>
+
               <div id="ai-section">
                 <AISection
                   ai={mapped.ai} aiLoading={false}
@@ -2131,6 +2668,9 @@ function App() {
               </div>
 
               {mapped.factors.length > 0 && <FactorsChart factors={mapped.factors}/>}
+
+              {/* Photo Walk-Through (ordered from the confirmed room groups) */}
+              <WalkthroughGallery walkthrough={result.walkthrough} files={files}/>
 
               {/* Home Report */}
               <HomeReportDisplay hr={result.home_report}/>
@@ -2159,7 +2699,7 @@ function App() {
                 </div>
                 <button className="btn primary" disabled={listingLoadingId!==null}
                   onClick={()=>{const so = mapped.styles.find(x=>x.id===activeStyleId) || mapped.styles[0]; if (so) generateListing(so);}}>
-                  {listingLoadingId!==null ? "Generating…" : "Generate listing"}
+                  {listingLoadingId!==null ? "Generating…" : "Regenerate listing"}
                 </button>
               </section>
               <ListingDisplay text={listingText} style={listingStyle}
@@ -2181,7 +2721,7 @@ function App() {
               )}
 
               <div style={{marginTop:32,display:"flex",justifyContent:"center"}}>
-                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setZipcode("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);setListingText(null);setListingStyle(null);setListingError(null);setListingLoadingId(null);setListingWhy(null);setWhyOpen(false);setListingTemplate("word_optimized");}}>
+                <button className="btn ghost" onClick={()=>{setResult(null);setMapped(null);setFiles([]);setLocation("");setZipcode("");setClassificationResult(null);setClassificationError(null);setReviewOpen(false);setListingText(null);setListingStyle(null);setListingError(null);setListingLoadingId(null);setListingWhy(null);setWhyOpen(false);setListingTemplate("audience_first");}}>
                   ← Start over
                 </button>
               </div>

@@ -48,9 +48,15 @@ HMDA_BASE_URL = (
 
 
 def _candidate_years() -> tuple[int, int]:
-    """Try current_year-1 first, fall back to current_year-2."""
+    """Try current_year-2 first (latest released HMDA dataset), then -1.
+
+    HMDA filtered datasets lag ~1.5 years: as of mid-2026 the year-1 (2025)
+    snapshot is not yet published and returns HTTP 400, so we prefer year-2
+    (2024) which is available, and keep year-1 as a forward-looking fallback
+    for once it lands.
+    """
     y = date.today().year
-    return y - 1, y - 2
+    return y - 2, y - 1
 
 # Age bracket ordering for "under 45" computation
 AGE_BRACKETS = ["<25", "25-34", "35-44", "45-54", "55-64", "65-74", ">74"]

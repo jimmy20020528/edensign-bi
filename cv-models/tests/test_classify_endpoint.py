@@ -51,10 +51,10 @@ def test_health():
 
 def test_classify_rooms_too_many_files():
     client = TestClient(app)
-    files = [("files", (f"img{i}.jpg", make_jpeg(), "image/jpeg")) for i in range(31)]
+    files = [("files", (f"img{i}.jpg", make_jpeg(), "image/jpeg")) for i in range(61)]
     r = client.post("/classify-rooms", files=files)
     assert r.status_code == 400
-    assert "30" in r.json()["detail"]
+    assert "60" in r.json()["detail"]
 
 
 def test_classify_rooms_not_ready():
@@ -154,3 +154,6 @@ def test_classify_and_group_routing():
     # as long as every photo appears in exactly one group)
     all_indices = [idx for g in result["groups"] for idx in g["photo_indices"]]
     assert sorted(all_indices) == [0, 1]
+    # Walk-through is no longer computed at classify time (it runs in the pipeline
+    # on user-confirmed groups via POST /walkthrough).
+    assert "walkthrough" not in result

@@ -1,7 +1,7 @@
 """cv-models FastAPI service — room classification + instance grouping.
 
 Startup: loads DINOv2 + three sklearn classifiers from artifacts/.
-Endpoint: POST /classify-rooms — accepts 1-30 images, returns per-photo
+Endpoint: POST /classify-rooms — accepts 1-60 images, returns per-photo
 room_type/occupancy/confidence/group_id and groups list.
 """
 import json
@@ -13,7 +13,7 @@ from typing import Any
 
 import joblib
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -100,8 +100,8 @@ async def classify_rooms(files: list[UploadFile] = File(...)) -> dict[str, Any]:
         raise HTTPException(503, "Models not loaded")
     if len(files) == 0:
         raise HTTPException(400, "At least 1 image required")
-    if len(files) > 30:
-        raise HTTPException(400, "Max 30 images")
+    if len(files) > 60:
+        raise HTTPException(400, "Max 60 images")
 
     tmp_paths: list[Path] = []
     try:
@@ -229,10 +229,70 @@ def _classify_and_group(image_paths: list[Path]) -> dict[str, Any]:
             }
         groups_by_id[gid]["photo_indices"].append(p["index"])
 
+    # Walk-through ordering is intentionally NOT computed here: it runs later in
+    # the pipeline (POST /walkthrough) on the user-confirmed groups, since the raw
+    # classification may be wrong and the user edits it first.
     return {
         "photos": photos,
         "groups": sorted(groups_by_id.values(), key=lambda g: g["group_id"]),
     }
+
+
+@app.post("/walkthrough")
+async def walkthrough(
+    files: list[UploadFile] = File(...),
+    groups: str = Form(...),
+) -> dict[str, Any]:
+    """Room-aware photo walk-through order from USER-CONFIRMED groups.
+
+    `groups` is a JSON array of the confirmed per-photo grouping, e.g.
+    [{"index":0,"room_type":"living","group_id":1}, ...]. Photos arrive in index
+    order. Returns {order, steps, new_room, segments} — order is the resequenced
+    photo indices (front door first, bedrooms/bathrooms never first, outdoor last).
+    """
+    if not _state.get("ready"):
+        raise HTTPException(503, "Models not loaded")
+    if len(files) == 0:
+        raise HTTPException(400, "At least 1 image required")
+    if len(files) > 60:
+        raise HTTPException(400, "Max 60 images")
+    try:
+        parsed = json.loads(groups)
+    except Exception:
+        raise HTTPException(400, "groups must be valid JSON")
+
+    n = len(files)
+    room_types = ["" for _ in range(n)]
+    group_ids = [0 for _ in range(n)]
+    for rec in parsed:
+        idx = rec.get("index")
+        if isinstance(idx, int) and 0 <= idx < n:
+            room_types[idx] = rec.get("room_type") or ""
+            group_ids[idx] = rec.get("group_id", idx)
+    # photos without a provided group fall back to their own singleton group
+    for i in range(n):
+        if group_ids[i] == 0 and not any(r.get("index") == i for r in parsed):
+            group_ids[i] = -(i + 1)
+
+    from group_instances import extract_features  # deferred heavy import
+    from walkthrough_order import order_grouped_from_features
+
+    tmp_paths: list[Path] = []
+    try:
+        for f in files:
+            content = await f.read()
+            suffix = Path(f.filename or "img.jpg").suffix or ".jpg"
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+            tmp.write(content)
+            tmp.close()
+            tmp_paths.append(Path(tmp.name))
+        cls_arr, patches_arr = extract_features(
+            tmp_paths, _state["processor"], _state["model"], _state["device"]
+        )
+        return order_grouped_from_features(cls_arr, patches_arr, room_types, group_ids)
+    finally:
+        for p in tmp_paths:
+            p.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

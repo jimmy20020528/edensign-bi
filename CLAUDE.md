@@ -115,6 +115,13 @@ flow already works end-to-end.
 
 ## Service map and how to restart
 
+**Easiest: `./run.sh`** at the repo root — one command does setup (per-module
+venvs + deps) and starts everything with health checks. `./run.sh {setup|start|
+stop|restart|status}`; ports overridable (`HR_PORT=8011 ./run.sh start`). The
+wizard is then at `http://localhost:8000/ui/wizard.html`. Full operator + deploy
+guide: **`QUICKSTART.md`** (includes the nginx single-origin + systemd production
+setup). The manual commands below are the equivalent of what `run.sh` does.
+
 If services die (Mac reboot, etc.) restart in this order:
 
 ```bash
@@ -190,13 +197,20 @@ Health: `curl localhost:8000/health`, `localhost:8001/health`, `localhost:8002/h
 | `/pipeline/run` one-shot endpoint                     | Done                  |
 | Listing Wizard (wizard.html) full UI                  | Done, end-to-end runs |
 | Address → ZIP geocoding in wizard                     | Done                  |
-| cv-models scripts (extract / train / predict)         | Done, awaiting data   |
+| cv-models classifier + Task 2 instance grouping        | **Done, wired into `/classify-rooms`** (starter model; real ~2,600-photo retrain in progress) |
+| Photo walk-through ordering (cv-models `/walkthrough`) | **Done** — group-aware, public-before-private, drag-reorder + download in wizard |
+| Room editor: drag/group/**delete photos** (syncs to upload) | **Done** |
+| Async background room classification (wizard)          | **Done** |
+| Neighborhood analysis (`/analyze/neighborhood`, OSM)   | **Done** |
+| Comparable Sales / CMA (`/analyze/comps`, Redfin)      | **Done** — type/size/year/distance filtering, "Your home" row, best-match highlight |
+| Buyer Appeal (`/analyze/buyer-appeal`) + Market Positioning | **Done** (grounded) |
+| Q/C shown as 1–10 (UAD kept in backend)               | **Done** |
+| Auto listing (Audience-First) + grounding/cliché fixes | **Done** |
+| `./run.sh` one-command setup/start + `QUICKSTART.md`   | **Done** |
 | Real training data collection (~2,600 photos)         | In progress (Jimmy)   |
-| cv-models Task 2 instance grouping code               | Designed, not coded   |
 | home-report-ai integration (skip Stage 1 + accept groups) | Not started       |
-| Frontend per-instance card display                    | Not started           |
+| Low-confidence VLM re-check for classifier accuracy   | Proposed, not started |
 | Staging API integration                               | Deferred              |
-| Room grouping UI ("re-group these")                   | Future                |
 
 ## How to make changes
 

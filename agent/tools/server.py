@@ -206,8 +206,8 @@ async def generate_home_report(files: list[UploadFile] = File(...)) -> dict[str,
     """Upload property photos, get a UAD-standard home assessment report."""
     if not files:
         raise HTTPException(status_code=400, detail="No images provided.")
-    if len(files) > 30:
-        raise HTTPException(status_code=400, detail="Maximum 30 images per request.")
+    if len(files) > 60:
+        raise HTTPException(status_code=400, detail="Maximum 60 images per request.")
 
     files_payload = []
     for f in files:
@@ -229,13 +229,17 @@ async def classify_rooms(files: list[UploadFile] = File(...)) -> dict[str, Any]:
     """Proxy room classification + instance grouping to cv-models (port 8003).
 
     Returns: {photos: [{index, room_type, occupancy, confidence, group_id}],
-              groups: [{group_id, room_type, occupancy, photo_indices}]}
+              groups: [{group_id, room_type, occupancy, photo_indices}],
+              walkthrough: {order: [idx...], steps: [null, overlap...],
+                            new_room: [bool...]}}
+    The cv-models response is forwarded verbatim, so `walkthrough` (photo
+    walk-through ordering) passes straight through to the wizard.
     Returns HTTP 503 if cv-models is not running (wizard handles gracefully).
     """
     if not files:
         raise HTTPException(status_code=400, detail="No images provided.")
-    if len(files) > 30:
-        raise HTTPException(status_code=400, detail="Maximum 30 images per request.")
+    if len(files) > 60:
+        raise HTTPException(status_code=400, detail="Maximum 60 images per request.")
 
     files_payload = []
     for f in files:
@@ -267,6 +271,7 @@ async def pipeline_run(
     listing_price: int | None = Form(None),
     agent_name: str | None = Form(None),
     agent_contact: str | None = Form(None),
+    room_groups: str | None = Form(None),
 ) -> dict[str, Any]:
     """Photos + zipcode_or_address -> full Edensign report.
 
@@ -275,8 +280,8 @@ async def pipeline_run(
     """
     if not files:
         raise HTTPException(status_code=400, detail="No images provided.")
-    if len(files) > 30:
-        raise HTTPException(status_code=400, detail="Maximum 30 images.")
+    if len(files) > 60:
+        raise HTTPException(status_code=400, detail="Maximum 60 images.")
     if not address and not (zipcode and len(zipcode) == 5 and zipcode.isdigit()):
         raise HTTPException(status_code=400, detail="Provide either address or 5-digit zipcode.")
 
@@ -319,8 +324,27 @@ async def pipeline_run(
                 return {"error": r.text[:300]}
             return r.json()
 
-    # bi_explain is independent — start it immediately so it runs while home_report runs
+    async def call_walkthrough() -> dict[str, Any] | None:
+        # Photo walk-through order from the user-confirmed groups (cv-models).
+        # Skipped if the frontend didn't send groups (user must classify+confirm first).
+        if not room_groups:
+            return None
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                r = await client.post(
+                    f"{CV_MODELS_BASE}/walkthrough",
+                    files=files_payload,
+                    data={"groups": room_groups},
+                )
+                if r.status_code != 200:
+                    return {"error": f"walkthrough {r.status_code}"}
+                return r.json()
+        except httpx.RequestError:
+            return None  # cv-models down — degrade gracefully
+
+    # bi_explain + walkthrough are independent — start them while home_report runs
     bi_explain_task = asyncio.create_task(call_bi_explain())
+    walkthrough_task = asyncio.create_task(call_walkthrough())
 
     try:
         # home report + BI analysis in parallel (listing needs both)
@@ -333,6 +357,7 @@ async def pipeline_run(
         pass
     finally:
         bi_explain = await bi_explain_task
+        walkthrough = await walkthrough_task
 
     # Resolved zipcode from BI (if user supplied address, BI returns the geocoded zip)
     resolved_zipcode = zipcode
@@ -346,6 +371,7 @@ async def pipeline_run(
         "home_report": home_report,
         "bi_analysis": bi_analysis,
         "bi_explain": bi_explain,
+        "walkthrough": walkthrough,
         "listing_text": None,
     }
 

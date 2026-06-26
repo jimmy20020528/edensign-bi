@@ -32,3 +32,9 @@ Thumbs.db
 *.png
 *.jpg
 *.jpeg
+
+# session caches / logs / large reference
+.cache/
+.run-logs/
+.ipynb_checkpoints/
+demo_report.pdf

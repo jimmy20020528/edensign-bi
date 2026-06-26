@@ -46,6 +46,13 @@ _STATE_FIPS: dict[str, int] = {
 # In-memory: state_fips (int) -> {zip (str) -> profile dict}
 _STATE_CACHE: dict[int, dict[str, dict]] = {}
 
+# Negative cache: states whose download failed with no usable local cache.
+# The NCES host (educationdata.urban.org) sits behind Cloudflare and rejects
+# datacenter IPs with a JS challenge (HTTP 403), so once a download fails we
+# stop retrying for the process lifetime — avoids per-request latency and log
+# spam. School data is simply omitted from the report when unavailable.
+_FAILED_STATES: set[int] = set()
+
 
 def _cache_path(state_fips: int) -> Path:
     return DATA_DIR / f"nces_state_{state_fips}.json"
@@ -146,6 +153,10 @@ def _ensure_state_loaded(state_fips: int) -> bool:
     if state_fips in _STATE_CACHE:
         return True
 
+    # Already known to be unreachable with no local cache — skip silently.
+    if state_fips in _FAILED_STATES:
+        return False
+
     path = _cache_path(state_fips)
 
     if _cache_is_stale(state_fips):
@@ -154,6 +165,12 @@ def _ensure_state_loaded(state_fips: int) -> bool:
             if path.exists():
                 pass  # fall through to load stale cache
             else:
+                _FAILED_STATES.add(state_fips)
+                logger.info(
+                    "NCES: state FIPS %d unavailable (host blocked, no cache) — "
+                    "school data will be omitted; not retrying this session.",
+                    state_fips,
+                )
                 return False
         else:
             path.write_text(json.dumps(schools, separators=(",", ":")))

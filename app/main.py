@@ -22,8 +22,18 @@ from db_dsn import get_db_dsn  # noqa: E402
 from app.services.gpt_explainer import explain_analysis_with_openai  # noqa: E402
 from app.services.zipcode_analyzer import analyze_zipcode  # noqa: E402
 from app.services.listing_writer import build_listing_copy  # noqa: E402
+from app.services.neighborhood_data import (  # noqa: E402
+    analyze_neighborhood,
+    generate_narrative_openai,
+)
+from app.services.redfin_comps import (  # noqa: E402
+    analyze_comps,
+    generate_comps_narrative_openai,
+)
+from app.services.positioning import generate_buyer_appeal_openai  # noqa: E402
 from app.upload_router import router as upload_router  # noqa: E402
 from staging.router import router as staging_router  # noqa: E402
+from app.wizard_proxy import router as wizard_proxy_router  # noqa: E402
 
 
 @asynccontextmanager
@@ -68,6 +78,7 @@ if _FRONTEND.is_dir():
 
 app.include_router(upload_router)
 app.include_router(staging_router)
+app.include_router(wizard_proxy_router)
 
 
 @app.get("/health")
@@ -188,3 +199,103 @@ async def listing_write(payload: ListingWriteRequest) -> dict[str, Any]:
         return await build_listing_copy(**payload.model_dump())
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+class NeighborhoodRequest(BaseModel):
+    address: str | None = None
+    zipcode: str | None = None
+    include_narrative: bool = True
+    market_context: dict[str, Any] | None = None
+
+
+@app.post("/analyze/neighborhood")
+async def analyze_neighborhood_endpoint(payload: NeighborhoodRequest) -> dict[str, Any]:
+    """Buyer-facing neighborhood analysis: nearby amenities + walkability + a
+    grounded narrative. Sources are key-free OSM + Walk Score; every source
+    degrades gracefully. See app/services/neighborhood_data.py."""
+    addr = (payload.address or "").strip() or None
+    zc = (payload.zipcode or "").strip() or None
+    if not addr and not (zc and len(zc) >= 5):
+        raise HTTPException(status_code=400, detail="Provide address or 5-digit zipcode.")
+
+    try:
+        data = analyze_neighborhood(address=addr, zipcode=zc)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Neighborhood lookup failed: {e}") from e
+    if not data.get("location"):
+        raise HTTPException(status_code=422, detail="Could not geocode the address/zip.")
+
+    narrative: dict[str, Any] | None = None
+    if payload.include_narrative:
+        try:
+            narrative = await generate_narrative_openai(data, payload.market_context)
+        except Exception as e:
+            logger.warning("Neighborhood narrative failed: %s", e)
+            narrative = {"error": str(e)[:200]}
+
+    return {"neighborhood": data, "narrative": narrative}
+
+
+class CompsRequest(BaseModel):
+    zipcode: str
+    address: str | None = None
+    bedrooms: float | None = None
+    bathrooms: float | None = None
+    sqft: float | None = None
+    listing_price: float | None = None
+    property_type: str | None = None
+    year_built: float | None = None
+    include_narrative: bool = True
+
+
+@app.post("/analyze/comps")
+async def analyze_comps_endpoint(payload: CompsRequest) -> dict[str, Any]:
+    """Comparable-sales analysis (CMA) from Redfin sold comps: comp set, $/SF
+    stats, suggested list range/anchor, and a grounded narrative. Redfin is an
+    unofficial source and degrades gracefully. See app/services/redfin_comps.py."""
+    zc = (payload.zipcode or "").strip()
+    if len(zc) < 5:
+        raise HTTPException(status_code=400, detail="Provide a 5-digit zipcode.")
+    try:
+        cma = analyze_comps(
+            zc, address=(payload.address or "").strip() or None,
+            beds=payload.bedrooms, baths=payload.bathrooms,
+            sqft=payload.sqft, listing_price=payload.listing_price,
+            property_type=payload.property_type, year_built=payload.year_built,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Comps lookup failed: {e}") from e
+    if not cma.get("comps"):
+        # no comps (Redfin blocked / region unresolved / empty) — report, don't crash
+        return {"cma": cma, "narrative": None,
+                "note": "No comparable sales available for this ZIP right now."}
+
+    narrative: dict[str, Any] | None = None
+    if payload.include_narrative:
+        try:
+            narrative = await generate_comps_narrative_openai(cma)
+        except Exception as e:
+            logger.warning("Comps narrative failed: %s", e)
+            narrative = {"error": str(e)[:200]}
+
+    return {"cma": cma, "narrative": narrative}
+
+
+class BuyerAppealRequest(BaseModel):
+    home_report: dict[str, Any] | None = None
+    market: dict[str, Any] | None = None
+    specs: dict[str, Any] | None = None
+
+
+@app.post("/analyze/buyer-appeal")
+async def analyze_buyer_appeal_endpoint(payload: BuyerAppealRequest) -> dict[str, Any]:
+    """The listing review's 'Buyer Appeal' paragraph — target buyer + the features
+    that drive interest, grounded in the home report's real features + specs."""
+    try:
+        out = await generate_buyer_appeal_openai(
+            home_report=payload.home_report, market=payload.market, specs=payload.specs
+        )
+        return out
+    except Exception as e:
+        logger.warning("Buyer appeal failed: %s", e)
+        return {"buyer_appeal": "", "error": str(e)[:200]}

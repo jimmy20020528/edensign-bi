@@ -416,7 +416,36 @@ def _build_response(
     }
 
 
+# In-flight dedup + result cache: with the DB down the pipeline calls this for the
+# same ZIP twice (style cards + executive summary), often concurrently. Without
+# this each call re-ranks styles via the LLM and the two disagree (e.g. the summary
+# names a different #1 style than the cards). This guarantees one ranking per ZIP.
+_EST_CACHE: dict[tuple, dict[str, Any]] = {}
+_EST_INFLIGHT: dict[tuple, "asyncio.Task"] = {}
+
+
 async def estimate_market_for_zip(
+    zipcode: str,
+    objective: str = "balanced",
+    scoring_mode: str = "hybrid",
+) -> dict[str, Any]:
+    """Cached entry point — see _estimate_market_for_zip_impl for the real work."""
+    key = (str(zipcode).strip()[:5], objective, scoring_mode)
+    if key in _EST_CACHE:
+        return _EST_CACHE[key]
+    if key in _EST_INFLIGHT:
+        return await _EST_INFLIGHT[key]
+    task = asyncio.ensure_future(_estimate_market_for_zip_impl(zipcode, objective, scoring_mode))
+    _EST_INFLIGHT[key] = task
+    try:
+        result = await task
+        _EST_CACHE[key] = result
+        return result
+    finally:
+        _EST_INFLIGHT.pop(key, None)
+
+
+async def _estimate_market_for_zip_impl(
     zipcode: str,
     objective: str = "balanced",
     scoring_mode: str = "hybrid",

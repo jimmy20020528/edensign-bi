@@ -11,11 +11,41 @@ Output: headline, paragraphs, staging_notes
 import json
 import logging
 import os
+import re
 from typing import Any, Optional
 
 import httpx
 
 from app.services.listing_templates import get_template
+
+
+# Deterministic safety net: the model is told to avoid clichés, but a few slip
+# through. We scrub only MULTI-WORD phrases here — those swaps preserve grammar.
+# Single adjectives (cozy/elegant/…) are left to the prompt: stripping a word can
+# break "warm and inviting exterior" → "warm and exterior", which reads worse.
+_CLICHE_PHRASES = {
+    "walker's paradise": "highly walkable",
+    "chef's dream": "well-equipped",
+    "a touch of elegance": "polish",
+    "touch of elegance": "polish",
+    "a touch of luxury": "a premium feel",
+    "touch of luxury": "a premium feel",
+    "perfect for": "well suited to",
+    "ideal for": "suited to",
+    "unique blend": "blend",
+    "rare find": "",
+    "don't miss": "",
+}
+
+
+def _scrub_cliches(text: str) -> str:
+    if not isinstance(text, str) or not text:
+        return text
+    for ph, rep in _CLICHE_PHRASES.items():
+        text = re.sub(re.escape(ph), rep, text, flags=re.IGNORECASE)
+    text = re.sub(r"\s{2,}", " ", text)
+    text = re.sub(r"\s+([,.;:!?])", r"\1", text)
+    return text.strip()
 
 logger = logging.getLogger(__name__)
 
@@ -424,7 +454,8 @@ async def build_listing_copy(
     staging_notes = parsed.get("staging_notes", [])
     logger.info("listing_writer: GPT returned %d paragraphs", len(paragraphs))
 
-    clean_paras = [p for p in paragraphs
+    headline = _scrub_cliches(headline)
+    clean_paras = [_scrub_cliches(p) for p in paragraphs
                    if not (agent_contact and agent_contact in p)
                    and not (agent_name and agent_name in p)]
     if agent_name and agent_contact:
