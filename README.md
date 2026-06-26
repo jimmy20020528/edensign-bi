@@ -1,6 +1,32 @@
 # Edensign BI — Style Atlas
 
-ZIP-level real estate staging style recommendation engine. Given a ZIP code, returns which interior design styles sell fastest and at the highest price per square foot, backed by MLS sold data and explainable ML models.
+ZIP-level real estate staging style recommendation engine — and the data engine
+behind the **Listing Wizard**, which turns property photos + an address into a full
+pre-listing package (condition 1–10, comparable sales, neighborhood, recommended
+staging style, photo walk-through order, and a grounded listing description).
+
+---
+
+## Quick start (one command)
+
+```bash
+git clone https://github.com/jimmy20020528/edensign-bi.git && cd edensign-bi
+cp .env.example .env          # then fill in your API keys (at least OPENAI_API_KEY)
+./run.sh                      # = setup (4 venvs + deps) + start everything, health-checked
+```
+
+Then open the **Listing Wizard**: <http://localhost:8000/ui/wizard.html>
+
+`./run.sh` with no argument runs `setup` then `start`. Also:
+`./run.sh {setup|start|stop|restart|status}`. First run downloads models
+(cv-models pulls DINOv2/torch — a few minutes). Ports are overridable, e.g.
+`HR_PORT=8011 ./run.sh start`.
+
+**Full operator + production-deployment guide (prereqs, nginx single-origin,
+systemd): [`QUICKSTART.md`](./QUICKSTART.md).**
+
+> The sections below describe the BI/Style-Atlas data + ML pipeline (rebuilding the
+> models from MLS data) — that's only needed to retrain, not to run the app.
 
 ---
 
