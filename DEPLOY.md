@@ -86,19 +86,37 @@ runpodctl receive <code>
 ```
 
 ### 3c. Start
+
+**Python:** use **3.11** (or 3.10–3.12). Some pods' default `python3` is 3.8 (no
+`venv`, and the code needs ≥3.10), so pass `PYTHON=python3.11` — your classify pod
+already runs on python3.11, so it's there:
+
 ```bash
-./deploy.sh                    # light: bi gateway on :80, NO cv-models (no torch)
-# — or, to also serve /walkthrough through :80 —
-WALKTHROUGH=1 ./deploy.sh      # additionally runs a demo cv-models on :8188 (CPU torch)
+PYTHON=python3.11 ./deploy.sh           # light: bi gateway on :80, NO cv-models (no torch)
 ```
 
 | command | bi | cv-models | walk-through | install |
 |---|---|---|---|---|
-| `./deploy.sh` | :80 | none (classify is the separate :8003 pod) | not served | light (no torch) |
-| `WALKTHROUGH=1 ./deploy.sh` | :80 | demo on :8188 (internal) | `:80/walkthrough` works | + CPU torch + DINOv2 |
+| `PYTHON=python3.11 ./deploy.sh` | :80 | none (classify is the separate :8003 pod) | not served | light (no torch) |
+| `PYTHON=python3.11 WALKTHROUGH=1 ./deploy.sh` | :80 | demo on :8188 (internal) | `:80/walkthrough` works | + CPU torch + DINOv2 |
 
-Either way the live classify on **:8003 is never touched**. `./deploy.sh
-{start\|stop\|restart\|status}` afterwards. Logs in `.run-logs/`.
+Either way the live classify on **:8003 is never touched**. `PYTHON=python3.11
+./deploy.sh {start\|stop\|restart\|status}` afterwards. Logs in `.run-logs/`.
+
+#### Walk-through: pre-install CPU torch first
+cv-models pins `torch==2.3.1`, and PyPI's default wheel is the **CUDA** build (~2.5 GB
+— pointless on a CPU pod and slow on a network volume). Install the **CPU** wheel into
+the cv-models venv *before* the walkthrough deploy so the requirements step finds it
+satisfied:
+
+```bash
+python3.11 -m venv cv-models/.venv
+cv-models/.venv/bin/pip install --no-cache-dir \
+  torch==2.3.1 torchvision==0.18.1 --index-url https://download.pytorch.org/whl/cpu
+PYTHON=python3.11 WALKTHROUGH=1 ./deploy.sh
+```
+(The deploy then downgrades numpy to the pinned 1.26.4 — torch 2.3 needs numpy <2 —
+installs `transformers` + `hf_transfer`, and on first request downloads DINOv2.)
 
 Internal services: agent :8002, home-report :8001 (localhost only — not exposed). If
 either port is taken, override: `AGENT_PORT=… HR_PORT=… BI_PORT=80 SKIP_CV=1 ./run.sh`.
@@ -138,3 +156,15 @@ From outside: `curl https://<pod>-80.proxy.runpod.net/health`.
   if the estimator can't run.
 - **Persistence not saving a field** → the Supabase column must exist; either run the
   `alter table` statements (see `API.md`) or set `SUPABASE_DB_URL` to auto-create them.
+- **`venv creation failed … ensurepip … python3.8-venv`** → default `python3` is 3.8;
+  re-run with `PYTHON=python3.11` (delete the half-made venvs first:
+  `rm -rf .venv */.venv`).
+- **bi unhealthy, log shows `ModuleNotFoundError`** → a dep is missing; install it into
+  the bi venv (`.venv/bin/pip install <pkg>`) and `restart`. (boto3 + hf_transfer are
+  already in requirements now.)
+- **cv-models stays `ready:false`** → it's loading/downloading DINOv2; check
+  `.run-logs/cv-models.log`. If it errors on `hf_transfer` (the env sets
+  `HF_HUB_ENABLE_HF_TRANSFER=1`), `cv-models/.venv/bin/pip install hf_transfer` then
+  `restart`.
+- **`Killed` lines during start/restart** → that's `free_port` replacing the previous
+  run's bi/agent (not OOM, if everything ends `healthy`). 8003 is never touched.
