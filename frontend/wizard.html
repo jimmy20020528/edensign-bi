@@ -2386,9 +2386,11 @@ function App() {
   // (the old imperative `if (submissionId)` save would silently skip it).
   useEffect(() => {
     if (submissionId && listingText) {
-      patchSubmission(apiBase, submissionId, { listing_text: listingText, listing_style: listingStyle });
+      // listing_style = the writing style the user picked (audience_first / word_optimized
+      // / luxury …), NOT the staging style (Transitional/Modern — that's bi_analysis).
+      patchSubmission(apiBase, submissionId, { listing_text: listingText, listing_style: listingTemplate });
     }
-  }, [submissionId, listingText, listingStyle]);
+  }, [submissionId, listingText, listingTemplate]);
   const [listingLoadingId, setListingLoadingId] = useState(null);
   const [listingError, setListingError] = useState(null);
   const [listingTemplate, setListingTemplate] = useState("audience_first");
