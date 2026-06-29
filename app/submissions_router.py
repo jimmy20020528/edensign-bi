@@ -1,0 +1,106 @@
+# bi/app/submissions_router.py
+"""Backend persistence for wizard submissions + staging runs.
+
+Moves what wizard.html used to do client-side (write to Supabase directly) into
+the API, so a rebuilt frontend only calls our endpoints and never touches the DB.
+Writes go to Supabase via its PostgREST REST API using httpx (no extra dependency,
+no SDK). Defaults to the same public publishable key the frontend used, so it works
+out of the box; override SUPABASE_URL / SUPABASE_ANON_KEY in .env (a service-role
+key works too).
+
+Endpoints:
+  POST  /submissions            -> create a row, returns {id}
+  PATCH /submissions/{id}       -> partial update (listing_text, listing_style, photo_urls)
+  POST  /staging-runs           -> record a staging run
+"""
+from __future__ import annotations
+
+import logging
+import os
+from typing import Any
+
+import httpx
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+logger = logging.getLogger("bi.submissions")
+router = APIRouter(tags=["submissions"])
+
+_URL = os.getenv("SUPABASE_URL", "https://zdmffkfthjpdikjsstzh.supabase.co").rstrip("/")
+_KEY = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_deZqRESP5GmT9R7zBgFYeQ_JA8WUN_I")
+_HEADERS = {"apikey": _KEY, "Authorization": f"Bearer {_KEY}", "Content-Type": "application/json"}
+
+
+class SubmissionIn(BaseModel):
+    address: str | None = None
+    zipcode: str | None = None
+    bedrooms: int | None = None
+    bathrooms: float | None = None
+    sqft: int | None = None
+    property_type: str | None = None
+    listing_price: int | None = None
+    agent_name: str | None = None
+    agent_contact: str | None = None
+    n_photos: int | None = None
+    classification_result: Any | None = None
+    home_report: Any | None = None
+    bi_analysis: Any | None = None
+    bi_explain: Any | None = None
+    listing_text: str | None = None
+    listing_style: str | None = None
+    photo_urls: list[str] | None = None
+
+
+class SubmissionPatch(BaseModel):
+    listing_text: str | None = None
+    photo_urls: list[str] | None = None
+    # NB: wizard_submissions has no listing_style column today.
+
+
+class StagingRunIn(BaseModel):
+    submission_id: Any | None = None
+    room_type: str | None = None
+    style: str | None = None
+    remove_furniture: bool | None = None
+    image_urls: list[str] | None = None
+    output_urls: list[str] | None = None
+    job_id: str | None = None
+
+
+async def _sb(method: str, path: str, *, json: Any = None, prefer: str | None = None) -> Any:
+    headers = dict(_HEADERS)
+    if prefer:
+        headers["Prefer"] = prefer
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            r = await client.request(method, f"{_URL}/rest/v1/{path}", headers=headers, json=json)
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e}") from e
+    if r.status_code >= 300:
+        raise HTTPException(status_code=502, detail=f"Supabase {r.status_code}: {r.text[:300]}")
+    return r.json() if r.content else None
+
+
+@router.post("/submissions")
+async def create_submission(payload: SubmissionIn) -> dict[str, Any]:
+    rows = await _sb("POST", "wizard_submissions",
+                     json=payload.model_dump(exclude_none=True),
+                     prefer="return=representation")
+    row = rows[0] if isinstance(rows, list) and rows else (rows or {})
+    return {"id": row.get("id")}
+
+
+@router.patch("/submissions/{submission_id}")
+async def update_submission(submission_id: str, payload: SubmissionPatch) -> dict[str, Any]:
+    body = payload.model_dump(exclude_none=True)
+    if body:
+        await _sb("PATCH", f"wizard_submissions?id=eq.{submission_id}",
+                  json=body, prefer="return=minimal")
+    return {"ok": True}
+
+
+@router.post("/staging-runs")
+async def create_staging_run(payload: StagingRunIn) -> dict[str, Any]:
+    await _sb("POST", "staging_runs",
+              json=payload.model_dump(exclude_none=True), prefer="return=minimal")
+    return {"ok": True}

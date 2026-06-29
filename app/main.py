@@ -32,6 +32,7 @@ from app.services.redfin_comps import (  # noqa: E402
 )
 from app.services.positioning import generate_buyer_appeal_openai  # noqa: E402
 from app.upload_router import router as upload_router  # noqa: E402
+from app.submissions_router import router as submissions_router  # noqa: E402
 from staging.router import router as staging_router  # noqa: E402
 from app.wizard_proxy import router as wizard_proxy_router  # noqa: E402
 
@@ -81,6 +82,7 @@ if _FRONTEND.is_dir():
 app.include_router(upload_router)
 app.include_router(staging_router)
 app.include_router(wizard_proxy_router)
+app.include_router(submissions_router)
 
 
 @app.get("/health")

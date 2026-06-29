@@ -365,7 +365,6 @@
 </style></head>
 <body>
 <div id="root"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
@@ -900,39 +899,50 @@ function FactorsChart({factors}) {
     </section>
   );
 }
-/* ── Supabase client ── */
-const _sb = window.supabase.createClient("https://zdmffkfthjpdikjsstzh.supabase.co", "sb_publishable_deZqRESP5GmT9R7zBgFYeQ_JA8WUN_I");
-
-async function saveSubmission(inputs, data) {
-  const { data: row, error } = await _sb.from('wizard_submissions').insert({
-    address: inputs.address || null,
-    zipcode: data.zipcode || null,
-    bedrooms: inputs.bedrooms !== "" ? parseInt(inputs.bedrooms) : null,
-    bathrooms: inputs.bathrooms !== "" ? parseFloat(inputs.bathrooms) : null,
-    sqft: inputs.sqft !== "" ? parseInt(inputs.sqft) : null,
-    property_type: inputs.propertyType || null,
-    listing_price: inputs.listingPrice !== "" ? parseInt(inputs.listingPrice) : null,
-    agent_name: inputs.agentName?.trim() || null,
-    agent_contact: inputs.agentContact?.trim() || null,
-    n_photos: data.n_photos || 0,
-    classification_result: inputs.classificationResult || null,
-    home_report: data.home_report || null,
-    bi_analysis: data.bi_analysis || null,
-    bi_explain: data.bi_explain || null,
-    listing_text: data.listing_text || null,
-    photo_urls: inputs.photoUrls || [],
-  }).select('id').single();
-  if (error) { console.error('[DB] saveSubmission error:', error); return null; }
-  console.log('[DB] submission saved:', row.id);
-  return row.id;
+/* ── Persistence via backend API (was a direct Supabase client) ── */
+async function saveSubmission(base, inputs, data) {
+  try {
+    const resp = await fetch(`${base}/submissions`, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        address: inputs.address || null,
+        zipcode: data.zipcode || null,
+        bedrooms: inputs.bedrooms !== "" ? parseInt(inputs.bedrooms) : null,
+        bathrooms: inputs.bathrooms !== "" ? parseFloat(inputs.bathrooms) : null,
+        sqft: inputs.sqft !== "" ? parseInt(inputs.sqft) : null,
+        property_type: inputs.propertyType || null,
+        listing_price: inputs.listingPrice !== "" ? parseInt(inputs.listingPrice) : null,
+        agent_name: inputs.agentName?.trim() || null,
+        agent_contact: inputs.agentContact?.trim() || null,
+        n_photos: data.n_photos || 0,
+        classification_result: inputs.classificationResult || null,
+        home_report: data.home_report || null,
+        bi_analysis: data.bi_analysis || null,
+        bi_explain: data.bi_explain || null,
+        listing_text: data.listing_text || null,
+        photo_urls: inputs.photoUrls || [],
+      }),
+    });
+    if (!resp.ok) { console.error('[DB] saveSubmission HTTP', resp.status); return null; }
+    const { id } = await resp.json();
+    console.log('[DB] submission saved:', id);
+    return id;
+  } catch (e) { console.error('[DB] saveSubmission error:', e); return null; }
 }
 
-async function updateSubmissionListing(submissionId, listingText, style) {
-  const { error } = await _sb.from('wizard_submissions')
-    .update({ listing_text: listingText, listing_style: style })
-    .eq('id', submissionId);
-  if (error) console.error('[DB] updateSubmissionListing error:', error);
-  else console.log('[DB] submission listing updated:', submissionId);
+async function patchSubmission(base, submissionId, fields) {
+  try {
+    const resp = await fetch(`${base}/submissions/${submissionId}`, {
+      method: "PATCH", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(fields),
+    });
+    if (!resp.ok) console.error('[DB] patchSubmission HTTP', resp.status);
+  } catch (e) { console.error('[DB] patchSubmission error:', e); }
+}
+
+async function updateSubmissionListing(base, submissionId, listingText, style) {
+  // NB: wizard_submissions has no listing_style column — persist listing_text only.
+  await patchSubmission(base, submissionId, { listing_text: listingText });
 }
 
 async function uploadPhotos(files, uploadBase) {
@@ -957,18 +967,22 @@ async function uploadPhotos(files, uploadBase) {
   return urls.filter(Boolean);
 }
 
-async function saveStagingRun(submissionId, d) {
-  const { error } = await _sb.from('staging_runs').insert({
-    submission_id: submissionId || null,
-    room_type: d.roomType,
-    style: d.style,
-    remove_furniture: d.removeFurniture,
-    image_urls: d.imageUrls,
-    output_urls: d.outputUrls,
-    job_id: d.jobId,
-  });
-  if (error) console.error('[DB] saveStagingRun error:', error);
-  else console.log('[DB] staging run saved');
+async function saveStagingRun(base, submissionId, d) {
+  try {
+    const resp = await fetch(`${base}/staging-runs`, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        submission_id: submissionId || null,
+        room_type: d.roomType,
+        style: d.style,
+        remove_furniture: d.removeFurniture,
+        image_urls: d.imageUrls,
+        output_urls: d.outputUrls,
+        job_id: d.jobId,
+      }),
+    });
+    if (!resp.ok) console.error('[DB] saveStagingRun HTTP', resp.status);
+  } catch (e) { console.error('[DB] saveStagingRun error:', e); }
 }
 
 /* ── Wizard-specific components ── */
@@ -2138,7 +2152,7 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
               clearInterval(intervalsRef.current[roomType]);
               const outputUrls = sd.output_urls || [];
               setJobMap(prev => ({...prev, [roomType]: {jobId:job_id, status:'COMPLETED', outputUrls, error:null}}));
-              saveStagingRun(submissionId, {roomType, style:activeStyle, removeFurniture, imageUrls:urls, outputUrls, jobId:job_id});
+              saveStagingRun(biBase, submissionId, {roomType, style:activeStyle, removeFurniture, imageUrls:urls, outputUrls, jobId:job_id});
               done();
             } else if (sd.status === "FAILED") {
               clearInterval(intervalsRef.current[roomType]);
@@ -2409,12 +2423,20 @@ function App() {
       setApiOk(true);
       setProgressStep(4);
       setResult(data);
-      uploadPhotos(files, stagingBase).then(photoUrls =>
-        saveSubmission(
-          {address:location.trim(), zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
-          data
-        ).then(id => { if (id) setSubmissionId(id); })
-      );
+      // Create the submission row immediately so its id is ready before the
+      // auto-generated listing finishes (otherwise listing_text never gets saved).
+      // Photos upload in the background and patch their URLs in afterwards.
+      saveSubmission(
+        apiBase,
+        {address:location.trim(), zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls:[]},
+        data
+      ).then(id => {
+        if (!id) return;
+        setSubmissionId(id);
+        uploadPhotos(files, stagingBase).then(photoUrls => {
+          if (photoUrls.length) patchSubmission(apiBase, id, { photo_urls: photoUrls });
+        });
+      });
       // Use Style Atlas's mapAnalysis to produce the same display shape.
       // bi_explain is the full /analyze/explain response: { analysis, llm }
       // mapAnalysis expects the llm part as 2nd arg.
@@ -2466,7 +2488,7 @@ function App() {
       setListingText(data.listing_text);
       setListingStyle(s.name);
       setListingWhy({summary: data.why_summary || "", steps: data.why_steps || {}});
-      if (submissionId) updateSubmissionListing(submissionId, data.listing_text, s.name);
+      if (submissionId) updateSubmissionListing(apiBase, submissionId, data.listing_text, s.name);
     } catch (e) {
       setListingError(e.message);
     } finally {

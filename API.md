@@ -127,6 +127,24 @@ Response: `{ zipcode, address, n_photos, home_report, bi_analysis, bi_explain, w
 
 ---
 
+## Persistence (optional) — save a submission to the DB
+
+The backend persists submissions/runs for you (it writes to Supabase server-side),
+so the frontend never needs DB credentials.
+
+- `POST /submissions` — create a row, returns `{ "id": "..." }`. Body: any of
+  `address, zipcode, bedrooms, bathrooms, sqft, property_type, listing_price,
+  agent_name, agent_contact, n_photos, classification_result, home_report,
+  bi_analysis, bi_explain, listing_text, photo_urls`.
+- `PATCH /submissions/{id}` — partial update; send `{ "listing_text": "..." }` after
+  the listing is (re)generated, and/or `{ "photo_urls": [...] }` once photos are uploaded.
+  (Regenerating overwrites `listing_text` — the latest wins.)
+- `POST /staging-runs` — `{ submission_id, room_type, style, remove_furniture,
+  image_urls, output_urls, job_id }`.
+
+Recommended order: create the submission right after `/pipeline/run` (get the `id`),
+then PATCH `photo_urls` after upload and `listing_text` after each generate.
+
 ## Typical frontend flow
 1. Upload photos → `POST /classify-rooms` → show rooms; let the user edit groups.
 2. (optional) `POST /walkthrough` with the edited groups → ordered photos to download.
