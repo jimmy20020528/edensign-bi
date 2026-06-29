@@ -141,16 +141,17 @@ const l = await (await fetch(`${API}/listing/write`, {
 `word_optimized`, `luxury`, `concise`, `aida`. Grounded in the photos/market — won't
 invent features or a location.
 
-## 10. Photo walk-through (optional)  `POST ${CLASSIFY-or-walkthrough-pod}/walkthrough`  *(multipart)*
+## 10. Photo walk-through (optional)  `POST ${API}/walkthrough`  *(multipart)*
 
-Re-orders photos like a real tour. Lives on a cv-models service (the classify pod or a
-dedicated one — confirm the URL). Send photos + the confirmed grouping.
+Re-orders photos like a real tour. Served on the gateway (`:80`) when the backend was
+started with `WALKTHROUGH=1` (see DEPLOY.md); otherwise it's unavailable. Send the
+photo files + the confirmed grouping.
 
 ```js
 const fd = new FormData();
 files.forEach(f => fd.append("files", f));
 fd.append("groups", JSON.stringify(groups));      // from #2 (possibly user-edited)
-const w = await (await fetch(`${WALKTHROUGH}/walkthrough`, { method:"POST", body: fd })).json();
+const w = await (await fetch(`${API}/walkthrough`, { method:"POST", body: fd })).json();
 // w.order [photoIndex...], w.segments [{ room_type, photo_indices }]
 ```
 

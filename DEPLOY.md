@@ -87,15 +87,18 @@ runpodctl receive <code>
 
 ### 3c. Start
 ```bash
-BI_PORT=80 SKIP_CV=1 ./run.sh          # = setup (venvs+deps) + start, health-checked
+./deploy.sh                    # light: bi gateway on :80, NO cv-models (no torch)
+# — or, to also serve /walkthrough through :80 —
+WALKTHROUGH=1 ./deploy.sh      # additionally runs a demo cv-models on :8188 (CPU torch)
 ```
 
-| env | effect |
-|---|---|
-| `BI_PORT=80` | bi gateway binds :80 (root in-container can bind privileged ports) |
-| `SKIP_CV=1` | don't install/start/stop a local cv-models — never touches :8003 |
+| command | bi | cv-models | walk-through | install |
+|---|---|---|---|---|
+| `./deploy.sh` | :80 | none (classify is the separate :8003 pod) | not served | light (no torch) |
+| `WALKTHROUGH=1 ./deploy.sh` | :80 | demo on :8188 (internal) | `:80/walkthrough` works | + CPU torch + DINOv2 |
 
-`./run.sh {start\|stop\|restart\|status}` afterwards. Logs in `.run-logs/`.
+Either way the live classify on **:8003 is never touched**. `./deploy.sh
+{start\|stop\|restart\|status}` afterwards. Logs in `.run-logs/`.
 
 Internal services: agent :8002, home-report :8001 (localhost only — not exposed). If
 either port is taken, override: `AGENT_PORT=… HR_PORT=… BI_PORT=80 SKIP_CV=1 ./run.sh`.
@@ -123,9 +126,10 @@ From outside: `curl https://<pod>-80.proxy.runpod.net/health`.
 
 ## 5. Notes & troubleshooting
 
-- **Walk-through** isn't served here (it needs cv-models). If needed, run a demo
-  cv-models on the spare port (e.g. 8188) — DINOv2 on CPU works, just slower — and
-  point the gateway's `CV_MODELS_BASE` at it.
+- **Walk-through**: served on `:80/walkthrough` only when you start with
+  `WALKTHROUGH=1 ./deploy.sh` (runs a demo cv-models on :8188 internally; bi proxies
+  to it). DINOv2 on CPU works, just slower. With the plain `./deploy.sh` the
+  `/walkthrough` route exists but has nothing behind it.
 - **`/classify-rooms` via the gateway won't work** against the live 8003 (that pod is
   the URL-based variant; the gateway proxy speaks multipart). Call classify directly
   per `API.md`. Analysis/report/persistence all go through :80.
