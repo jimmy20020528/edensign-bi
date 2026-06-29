@@ -15,10 +15,12 @@ from fastapi import APIRouter, Request, Response
 
 router = APIRouter()
 
+# Upstream services. bi (:8000) is the single public gateway; it forwards each
+# path to whichever internal service owns it, so the whole API is reachable on one
+# port / one pod.
 AGENT_BASE = os.getenv("AGENT_BASE", "http://localhost:8002")
-
-# Paths that belong to the agent service, proxied verbatim.
-_PROXIED_PATHS = ("/classify-rooms", "/generate-listing", "/pipeline/run")
+CV_MODELS_BASE = os.getenv("CV_MODELS_BASE", "http://localhost:8003")
+HOME_REPORT_BASE = os.getenv("HOME_REPORT_BASE", "http://localhost:8001")
 
 # Long timeout: /pipeline/run fans out to CV + home-report + BI + GPT.
 _TIMEOUT = httpx.Timeout(300.0)
@@ -29,13 +31,13 @@ _HOP_BY_HOP = {
 }
 
 
-async def _proxy(request: Request, path: str) -> Response:
+async def _proxy(request: Request, path: str, base: str = AGENT_BASE) -> Response:
     body = await request.body()
     headers = {k: v for k, v in request.headers.items() if k.lower() not in _HOP_BY_HOP}
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         upstream = await client.request(
             request.method,
-            f"{AGENT_BASE}{path}",
+            f"{base}{path}",
             content=body,
             headers=headers,
             params=dict(request.query_params),
@@ -64,3 +66,15 @@ async def proxy_generate_listing(request: Request) -> Response:
 @router.post("/pipeline/run")
 async def proxy_pipeline_run(request: Request) -> Response:
     return await _proxy(request, "/pipeline/run")
+
+
+@router.post("/walkthrough")
+async def proxy_walkthrough(request: Request) -> Response:
+    # photo walk-through ordering lives on cv-models
+    return await _proxy(request, "/walkthrough", base=CV_MODELS_BASE)
+
+
+@router.post("/report")
+async def proxy_report(request: Request) -> Response:
+    # per-photo quality/condition report lives on home-report-ai
+    return await _proxy(request, "/report", base=HOME_REPORT_BASE)

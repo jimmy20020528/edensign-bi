@@ -65,7 +65,9 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "null",
     ],
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    # localhost (any port) + any RunPod proxy origin, so a frontend served from a
+    # separate pod (https://<pod>-<port>.proxy.runpod.net) can call this API.
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?$|https://[a-z0-9-]+\.proxy\.runpod\.net$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

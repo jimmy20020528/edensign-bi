@@ -2308,8 +2308,15 @@ function StagingModal({files, classificationResult, defaultStyle, top1Style, biB
 function App() {
   // Tool service (Wizard's backend). Proxied through this origin (BI :8000) so
   // only one RunPod port needs to be exposed for the demo.
-  const [apiBase] = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
-  const [biBase]  = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
+  // Backend base URL. Defaults to same-origin (single-pod demo); override when the
+  // frontend is served from a different pod than the API:
+  //   ?api=https://<backend-pod>-8000.proxy.runpod.net   (or set window.__EDENSIGN_API__)
+  const resolveApiBase = () =>
+    new URLSearchParams(window.location.search).get("api")
+    || window.__EDENSIGN_API__
+    || (window.location.origin==="null" ? "http://localhost:8000" : window.location.origin);
+  const [apiBase] = useState(resolveApiBase);
+  const [biBase]  = useState(resolveApiBase);
   const [page, setPage] = useState("wizard");
   const [files, setFiles] = useState([]);
   const [location, setLocation] = useState("");        // property address
@@ -2344,7 +2351,7 @@ function App() {
   const classifyRerunRef = useRef(false);
   const [stagingModalStyle, setStagingModalStyle] = useState(null);
   const [stagingTop1, setStagingTop1] = useState("");
-  const [stagingBase] = useState(()=>window.location.origin==="null"?"http://localhost:8000":window.location.origin);
+  const [stagingBase] = useState(resolveApiBase);
   const [submissionId, setSubmissionId] = useState(null);
   const [listingText, setListingText] = useState(null);
   const [listingStyle, setListingStyle] = useState(null);
