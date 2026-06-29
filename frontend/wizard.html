@@ -1924,7 +1924,9 @@ function fmt10(decimal) {
    1-10 score so the UI never surfaces the internal codes. Display-only. */
 function scrubUAD(s) {
   if (typeof s !== "string") return s;
-  return s.replace(/\b([QC])([1-6])\b/g, (_m, _l, d) => `${fmt10(Number(d))}/10`);
+  return s
+    .replace(/\b([QC])([1-6])\b/g, (_m, _l, d) => `${fmt10(Number(d))}/10`)
+    .replace(/\bUAD\s*/g, "");  // drop the internal "UAD" jargon too
 }
 
 function HomeReportDisplay({hr}) {
