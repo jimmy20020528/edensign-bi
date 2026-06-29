@@ -97,6 +97,14 @@ def _enrich_home_report(hr: Any) -> Any:
         out["overall_quality_10"] = _uad_to_10(out["overall_quality_decimal"])
     if out.get("overall_condition_decimal") is not None:
         out["overall_condition_10"] = _uad_to_10(out["overall_condition_decimal"])
+    stats = out.get("stats")
+    if isinstance(stats, dict):
+        stats = dict(stats)
+        if stats.get("overall_quality_decimal") is not None:
+            stats["overall_quality_10"] = _uad_to_10(stats["overall_quality_decimal"])
+        if stats.get("overall_condition_decimal") is not None:
+            stats["overall_condition_10"] = _uad_to_10(stats["overall_condition_decimal"])
+        out["stats"] = stats
     rooms = out.get("rooms")
     if isinstance(rooms, list):
         new_rooms = []
