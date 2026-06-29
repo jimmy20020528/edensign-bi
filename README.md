@@ -18,12 +18,26 @@ cp .env.example .env          # then fill in your API keys (at least OPENAI_API_
 Then open the **Listing Wizard**: <http://localhost:8000/ui/wizard.html>
 
 `./run.sh` with no argument runs `setup` then `start`. Also:
-`./run.sh {setup|start|stop|restart|status}`. First run downloads models
-(cv-models pulls DINOv2/torch — a few minutes). Ports are overridable, e.g.
-`HR_PORT=8011 ./run.sh start`.
+`./run.sh {setup|start|stop|restart|status}`. It auto-handles the gotchas — picks a
+Python ≥3.10, installs CPU torch on GPU-less hosts, includes all deps — so a fresh
+clone just runs. Ports overridable, e.g. `HR_PORT=8011 ./run.sh start`.
 
-**Full operator + production-deployment guide (prereqs, nginx single-origin,
-systemd): [`QUICKSTART.md`](./QUICKSTART.md).**
+## Deploy the backend (RunPod / a server)
+
+To run just the **API backend** (bi gateway on :80 + agent + home-report) for an
+external frontend — alongside a separate classification service:
+
+```bash
+git clone -b deploy/backend-runpod <repo> && cd edensign-bi
+cp .env.example .env          # fill in the keys
+./deploy.sh                   # gateway on :80   (or: WALKTHROUGH=1 ./deploy.sh)
+```
+
+One command, no flags — see **[`DEPLOY.md`](./DEPLOY.md)** for the full guide,
+**[`API.md`](./API.md)** / **[`FRONTEND.md`](./FRONTEND.md)** for how a frontend calls it.
+
+**Local operator + production guide (nginx single-origin, systemd):
+[`QUICKSTART.md`](./QUICKSTART.md).**
 
 > The sections below describe the BI/Style-Atlas data + ML pipeline (rebuilding the
 > models from MLS data) — that's only needed to retrain, not to run the app.

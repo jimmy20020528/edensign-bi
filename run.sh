@@ -29,7 +29,19 @@ CV_PORT="${CV_PORT:-8003}"
 # the agent at the existing service. Use this when :8003 is part of a production service
 # that must not blink.
 SKIP_CV="${SKIP_CV:-}"
-PY="${PYTHON:-python3}"
+# Pick a Python ≥3.10 that can build venvs — some pods default `python3` to 3.8 (no
+# venv, and the code needs ≥3.10). Override with PYTHON=… if you want a specific one.
+_pick_python() {
+  [ -n "${PYTHON:-}" ] && { echo "$PYTHON"; return; }
+  for p in python3.12 python3.11 python3.10 python3; do
+    command -v "$p" >/dev/null 2>&1 || continue
+    "$p" -c 'import sys;exit(0 if sys.version_info[:2]>=(3,10) else 1)' 2>/dev/null || continue
+    "$p" -m venv --help >/dev/null 2>&1 || continue
+    echo "$p"; return
+  done
+  echo python3
+}
+PY="$(_pick_python)"
 LOG_DIR="$ROOT/.run-logs"
 mkdir -p "$LOG_DIR"
 
@@ -57,6 +69,13 @@ setup_module() {  # label dir
     "$PY" -m venv "$dir/.venv" || { err "$label: venv creation failed"; return 1; }
   fi
   "$dir/.venv/bin/pip" install -q --upgrade pip >/dev/null 2>&1
+  # cv-models on a GPU-less host: install the CPU torch wheel up front so the pinned
+  # torch==2.3.1 isn't pulled as the ~2.5GB CUDA build (huge + pointless without a GPU).
+  if [ "$label" = "cv-models" ] && ! command -v nvidia-smi >/dev/null 2>&1; then
+    log "$label: no GPU — installing CPU torch"
+    "$dir/.venv/bin/pip" install -q --no-cache-dir torch==2.3.1 torchvision==0.18.1 \
+      --index-url https://download.pytorch.org/whl/cpu || warn "$label: CPU torch preinstall failed (will try default)"
+  fi
   "$dir/.venv/bin/pip" install -q -r "$dir/requirements.txt" || { err "$label: pip install failed"; return 1; }
   ok "$label deps ready"
 }
