@@ -46,6 +46,11 @@ async def lifespan(app: FastAPI):
         logger.warning("Database unavailable (%s) — running in LLM-only mode", e)
         app.state.pool = None
     try:
+        from app.submissions_router import run_migration
+        await run_migration()  # auto-create Supabase tables/columns if SUPABASE_DB_URL is set
+    except Exception as e:  # noqa: BLE001
+        logger.warning("submission auto-migration failed: %s", e)
+    try:
         yield
     finally:
         if app.state.pool:

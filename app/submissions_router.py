@@ -112,6 +112,57 @@ def _enrich_home_report(hr: Any) -> Any:
     return out
 
 
+# ── Optional auto-migration ────────────────────────────────────────────────
+# If a direct Postgres connection is provided (Supabase → Settings → Database →
+# Connection string; the password is resettable there), bi creates the tables and
+# any missing columns on startup, so columns never have to be added by hand.
+SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")
+
+_TABLE_COLUMNS: dict[str, list[tuple[str, str]]] = {
+    "wizard_submissions": [
+        ("address", "text"), ("zipcode", "text"), ("bedrooms", "int"),
+        ("bathrooms", "numeric"), ("sqft", "int"), ("year_built", "int"),
+        ("property_type", "text"), ("listing_price", "bigint"),
+        ("agent_name", "text"), ("agent_contact", "text"), ("n_photos", "int"),
+        ("classification_result", "jsonb"), ("home_report", "jsonb"),
+        ("bi_analysis", "jsonb"), ("bi_explain", "jsonb"),
+        ("listing_text", "text"), ("listing_style", "text"), ("photo_urls", "jsonb"),
+        ("buyer_appeal", "text"), ("neighborhood", "jsonb"), ("comps", "jsonb"),
+    ],
+    "staging_runs": [
+        ("submission_id", "uuid"), ("room_type", "text"), ("style", "text"),
+        ("remove_furniture", "boolean"), ("image_urls", "jsonb"),
+        ("output_urls", "jsonb"), ("job_id", "text"),
+    ],
+}
+
+
+async def run_migration() -> None:
+    """Create tables + add any missing columns. No-op unless SUPABASE_DB_URL is set."""
+    if not SUPABASE_DB_URL:
+        return
+    try:
+        import asyncpg
+        conn = await asyncpg.connect(SUPABASE_DB_URL, timeout=10)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("auto-migration skipped (cannot connect): %s", e)
+        return
+    try:
+        for table, cols in _TABLE_COLUMNS.items():
+            await conn.execute(
+                f"create table if not exists {table} "
+                "(id uuid primary key default gen_random_uuid(), "
+                "created_at timestamptz default now())"
+            )
+            for name, typ in cols:
+                await conn.execute(f"alter table {table} add column if not exists {name} {typ}")
+        logger.info("auto-migration ok: tables/columns ensured")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("auto-migration error: %s", e)
+    finally:
+        await conn.close()
+
+
 async def _sb(method: str, path: str, *, json: Any = None, prefer: str | None = None) -> Any:
     headers = dict(_HEADERS)
     if prefer:
