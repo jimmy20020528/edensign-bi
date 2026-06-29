@@ -1,9 +1,13 @@
-# Edensign — Quick Start & Deployment
+# Edensign — Quick Start (run the full stack locally)
 
-Everything you need to run the stack locally and deploy it as a service.
-The stack is five processes: **bi** (8000), **home-report-ai** (8001),
-**agent** (8002), **cv-models** (8003), and the **Listing Wizard** (a static page
-that bi serves at `/ui/`).
+> **Which guide?** This runs the **whole stack on one machine** (bi + home-report +
+> agent + cv-models + the Listing Wizard) for local dev/demo. To deploy just the
+> **API backend on a RunPod pod** for an external frontend (gateway on :80, classify
+> as a separate service), use **[`DEPLOY.md`](./DEPLOY.md)** instead.
+
+Everything you need to run the stack locally. It's five processes: **bi** (8000),
+**home-report-ai** (8001), **agent** (8002), **cv-models** (8003), and the **Listing
+Wizard** (a static page that bi serves at `/ui/`).
 
 ---
 
