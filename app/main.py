@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 import sys
@@ -73,7 +74,14 @@ app.add_middleware(
     ],
     # localhost (any port) + any RunPod proxy origin, so a frontend served from a
     # separate pod (https://<pod>-<port>.proxy.runpod.net) can call this API.
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?$|https://[a-z0-9-]+\.proxy\.runpod\.net$",
+    # localhost (any port), edensign.io + any subdomain (the production frontend),
+    # any RunPod proxy origin (testing). Add more via CORS_EXTRA_ORIGIN_REGEX.
+    allow_origin_regex=(
+        r"https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+        r"|https://([a-z0-9-]+\.)?edensign\.io$"
+        r"|https://[a-z0-9-]+\.proxy\.runpod\.net$"
+        + (r"|" + os.environ["CORS_EXTRA_ORIGIN_REGEX"] if os.environ.get("CORS_EXTRA_ORIGIN_REGEX") else "")
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
