@@ -7,9 +7,15 @@ import os
 import uuid
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
+# Don't let boto3 fall back to the EC2 instance-metadata service for creds/region —
+# on non-AWS hosts (e.g. a RunPod pod) that hangs for a long time. Fail fast instead.
+os.environ.setdefault("AWS_EC2_METADATA_DISABLED", "true")
+_S3_CONFIG = Config(connect_timeout=5, read_timeout=20, retries={"max_attempts": 2})
 
 router = APIRouter(tags=["upload"])
 
@@ -35,7 +41,7 @@ async def upload_image(req: UploadRequest) -> UploadResponse:
     raw = base64.b64decode(req.data)
 
     def _upload() -> None:
-        s3 = boto3.client("s3")
+        s3 = boto3.client("s3", config=_S3_CONFIG)
         s3.put_object(Bucket=_BUCKET, Key=key, Body=raw, ContentType=req.content_type)
 
     try:
