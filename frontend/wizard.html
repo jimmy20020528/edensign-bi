@@ -2381,6 +2381,14 @@ function App() {
   const [submissionId, setSubmissionId] = useState(null);
   const [listingText, setListingText] = useState(null);
   const [listingStyle, setListingStyle] = useState(null);
+  // Persist listing_text + listing_style whenever BOTH the listing and the submission
+  // id are ready. Covers the auto-generated listing finishing before the id comes back
+  // (the old imperative `if (submissionId)` save would silently skip it).
+  useEffect(() => {
+    if (submissionId && listingText) {
+      patchSubmission(apiBase, submissionId, { listing_text: listingText, listing_style: listingStyle });
+    }
+  }, [submissionId, listingText, listingStyle]);
   const [listingLoadingId, setListingLoadingId] = useState(null);
   const [listingError, setListingError] = useState(null);
   const [listingTemplate, setListingTemplate] = useState("audience_first");
@@ -2500,7 +2508,7 @@ function App() {
       setListingText(data.listing_text);
       setListingStyle(s.name);
       setListingWhy({summary: data.why_summary || "", steps: data.why_steps || {}});
-      if (submissionId) updateSubmissionListing(apiBase, submissionId, data.listing_text, s.name);
+      // (persistence handled by the submissionId/listingText effect above — race-proof)
     } catch (e) {
       setListingError(e.message);
     } finally {
