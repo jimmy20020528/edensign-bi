@@ -1,43 +1,41 @@
 # Edensign API — Integration Guide
 
-Your frontend talks to **one gateway** — the `bi` service (default port **8000**).
-It serves the analysis endpoints itself and proxies the rest (classification,
-walk-through, home report, pipeline) to the internal services, which may live on
-the same pod or a different one. **You only need this one base URL.**
+Two base URLs (see DEPLOY.md / FRONTEND.md):
 
 ```
-BASE = https://<gateway-pod>-8000.proxy.runpod.net      # http://localhost:8000 in dev
+BASE     = https://<gateway-pod>-80.proxy.runpod.net      # bi gateway: everything below
+CLASSIFY = https://<classify-pod>-8003.proxy.runpod.net   # classification (its own pod)
 ```
+(In local dev the gateway defaults to `http://localhost:8000`.)
 
-- Bodies are JSON unless marked **multipart**. Photo uploads = `multipart/form-data`
-  with repeated `files` parts. Max **60** photos/request.
-- CORS already allows `*.proxy.runpod.net` and `localhost` — a frontend on another
-  pod/domain can call this directly from the browser.
+- Bodies are JSON unless marked **multipart**.
+- CORS allows `*.proxy.runpod.net` and `localhost` — call from the browser directly.
 - No auth today — add your own before public launch.
 - Everything degrades gracefully (missing data → `error`/`note`, not a crash).
-- `GET /health` → `{"status":"ok"}`.
-
-> Classification also runs as its own service and is reachable directly on its pod
-> (`https://<classify-pod>-8003.proxy.runpod.net/classify-rooms`) if you prefer to
-> call it without the gateway — same request/response as below.
+- `GET ${BASE}/health` → `{"status":"ok"}`.
 
 ---
 
-## `POST /classify-rooms`  *(multipart)* — room type + grouping + walk-through
+## `POST ${CLASSIFY}/classify-rooms` — room type + grouping  *(JSON, URL-based)*
+
+The deployed classifier takes **image URLs** (upload first — see `/upload`) and
+downloads them server-side. (Different from the gateway's internal multipart variant.)
+
 ```bash
-curl -X POST "$BASE/classify-rooms" -F files=@1.jpg -F files=@2.jpg
+curl -X POST "$CLASSIFY/classify-rooms" -H "Content-Type: application/json" \
+  -d '{"image_urls":["https://content.edensign.io/images/a.jpg", "..."]}'   # 1–30 URLs
 ```
 ```jsonc
-{ "photos": [ { "index":0, "room_type":"kitchen", "occupancy":"furnished",
-               "confidence":0.91, "group_id":1 } ],
-  "groups": [ { "group_id":1, "room_type":"kitchen", "occupancy":"furnished",
-               "photo_indices":[0,4] } ],
-  "walkthrough": { "order":[...], "steps":[...], "new_room":[...] } }
+{ "groups": [
+    { "id": 1, "room_type": "kitchen", "occupancy": "furnished",
+      "photos": [ { "url": "https://…/a.jpg", "room_type": "kitchen",
+                    "occupancy": "furnished", "confidence": 0.91 } ] } ] }
 ```
-`index` = position in your upload; `group_id` ties photos of the same room together.
 
-## `POST /walkthrough`  *(multipart)* — re-order photos like a tour
-Send photos + the (possibly user-edited) grouping.
+## `POST ${BASE}/walkthrough` — re-order photos like a tour  *(multipart)*
+
+Only served when the gateway was started with `WALKTHROUGH=1` (see DEPLOY.md);
+otherwise unavailable. Send photo files + the confirmed grouping.
 ```bash
 curl -X POST "$BASE/walkthrough" -F files=@1.jpg -F files=@2.jpg \
   -F groups='[{"index":0,"room_type":"kitchen","group_id":1}, ...]'

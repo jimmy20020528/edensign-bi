@@ -1,5 +1,10 @@
 # Edensign — RunPod Deployment Guide
 
+> **Which guide?** This is the original **full-stack-on-one-pod** deploy (all services
+> + the Listing Wizard, ports 5173/8000-8003). For the current **backend-gateway**
+> deploy — bi on **:80** as a single API for an external/rebuilt frontend, with
+> classification on its own **:8003** pod — use **`DEPLOY.md`** instead.
+
 ## Pod Requirements
 
 | Resource | Minimum | Recommended |
