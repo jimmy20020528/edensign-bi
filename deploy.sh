@@ -15,7 +15,7 @@ cd "$(dirname "$0")"
 if [ -n "${WALKTHROUGH:-}" ]; then
   # cv-models on :8188 (internal) for /walkthrough; bi:80 proxies to it. run.sh only
   # touches :8188, so the live classify on :8003 is left alone.
-  exec env BI_PORT="${BI_PORT:-80}" CV_PORT="${CV_PORT:-8188}" ./run.sh "${1:-}"
+  exec env BI_PORT="${BI_PORT:-80}" HR_PORT="${HR_PORT:-8011}" CV_PORT="${CV_PORT:-8188}" ./run.sh "${1:-}"
 else
-  exec env BI_PORT="${BI_PORT:-80}" SKIP_CV=1 ./run.sh "${1:-}"
+  exec env BI_PORT="${BI_PORT:-80}" HR_PORT="${HR_PORT:-8011}" SKIP_CV=1 ./run.sh "${1:-}"
 fi

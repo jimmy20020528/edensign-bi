@@ -118,7 +118,8 @@ PYTHON=python3.11 WALKTHROUGH=1 ./deploy.sh
 (The deploy then downgrades numpy to the pinned 1.26.4 — torch 2.3 needs numpy <2 —
 installs `transformers` + `hf_transfer`, and on first request downloads DINOv2.)
 
-Internal services: agent :8002, home-report :8001 (localhost only — not exposed). If
+Internal services: agent :8002, home-report :8011 (localhost only — not exposed; many
+RunPod pods run nginx on :8001, so home-report defaults to :8011 to avoid it). If
 either port is taken, override: `AGENT_PORT=… HR_PORT=… BI_PORT=80 SKIP_CV=1 ./run.sh`.
 
 ### 3d. Expose + hand off
@@ -168,3 +169,10 @@ From outside: `curl https://<pod>-80.proxy.runpod.net/health`.
   `restart`.
 - **`Killed` lines during start/restart** → that's `free_port` replacing the previous
   run's bi/agent (not OOM, if everything ends `healthy`). 8003 is never touched.
+- **`/report` returns `405 Not Allowed (nginx)`** → a system nginx holds :8001, so
+  home-report never bound it (its `/health` was answered by nginx→bi, looking healthy).
+  Run home-report elsewhere: `HR_PORT=8011 …` (now the default in `deploy.sh`). Restart.
+- **`/upload` shows RunPod's "Waiting for service to respond"** → the proxy timed out on
+  a slow first response (large base64 + S3). Test it on the pod itself
+  (`curl localhost:80/upload …`); a real `{"url":...}` there means it works (browsers
+  upload fine). A `502 S3 upload failed` means the AWS_* keys/bucket are wrong.
