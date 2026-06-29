@@ -107,9 +107,8 @@ That's it — no version flags or manual torch. The scripts auto-handle what use
 - **Ports** — home-report on **:8011** (RunPod pods often run nginx on :8001), classify left on :8003.
 - **Deps** — `boto3` (S3 upload) and `hf_transfer` (DINOv2 download) are in requirements.
 
-Internal services: agent :8002, home-report :8011 (localhost only — not exposed). If
-RunPod pods run nginx on :8001, so home-report defaults to :8011 to avoid it). If
-either port is taken, override: `AGENT_PORT=… HR_PORT=… BI_PORT=80 SKIP_CV=1 ./run.sh`.
+Internal services: agent :8002, home-report :8011 (localhost only — not exposed). If a
+port is taken, override it: `AGENT_PORT=… HR_PORT=… ./deploy.sh`.
 
 ### 3d. Expose + hand off
 - RunPod: expose HTTP port **80** (8003 is already exposed for classify).
@@ -146,9 +145,9 @@ From outside: `curl https://<pod>-80.proxy.runpod.net/health`.
   if the estimator can't run.
 - **Persistence not saving a field** → the Supabase column must exist; either run the
   `alter table` statements (see `API.md`) or set `SUPABASE_DB_URL` to auto-create them.
-- **`venv creation failed … ensurepip … python3.8-venv`** → default `python3` is 3.8;
-  re-run with `PYTHON=python3.11` (delete the half-made venvs first:
-  `rm -rf .venv */.venv`).
+- **`venv creation failed … ensurepip`** → `run.sh` auto-picks a Python ≥3.10, but if
+  none with `venv` is installed: `apt install python3.11-venv` (or set `PYTHON=…`), then
+  `rm -rf .venv */.venv && ./deploy.sh`.
 - **bi unhealthy, log shows `ModuleNotFoundError`** → a dep is missing; install it into
   the bi venv (`.venv/bin/pip install <pkg>`) and `restart`. (boto3 + hf_transfer are
   already in requirements now.)
