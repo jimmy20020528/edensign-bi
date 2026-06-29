@@ -1171,10 +1171,13 @@ const NB_CATS = {
   shopping:   {icon:"🛍", label:"Shopping"},
   transit:    {icon:"🚌", label:"Transit"},
 };
-function NeighborhoodSection({address, biBase, marketContext}) {
+function NeighborhoodSection({address, biBase, marketContext, submissionId}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
+  useEffect(() => {  // persist once both the result and the submission id are ready
+    if (submissionId && data) patchSubmission(biBase, submissionId, { neighborhood: data });
+  }, [submissionId, data]);
   useEffect(() => {
     if (!address || address.trim().length < 6) return;
     let cancelled = false;
@@ -1245,10 +1248,13 @@ function NeighborhoodSection({address, biBase, marketContext}) {
 /* Comparable Sales (CMA): recent nearby sold comps + suggested price range, from
    Redfin via /analyze/comps. Self-contained: fetches on mount from zipcode +
    subject specs. Renders nothing without a ZIP or if the lookup fails. Additive. */
-function CompsSection({zipcode, address, propertyType, bedrooms, bathrooms, sqft, yearBuilt, listingPrice, biBase}) {
+function CompsSection({zipcode, address, propertyType, bedrooms, bathrooms, sqft, yearBuilt, listingPrice, biBase, submissionId}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
+  useEffect(() => {  // persist comps + market positioning (in data.narrative) to the submission
+    if (submissionId && data) patchSubmission(biBase, submissionId, { comps: data });
+  }, [submissionId, data]);
   const zc = (zipcode || "").trim();
   useEffect(() => {
     if (zc.length < 5) return;
@@ -1370,9 +1376,12 @@ function CompsSection({zipcode, address, propertyType, bedrooms, bathrooms, sqft
 
 /* Buyer Appeal: the listing review's "who buys this & why" paragraph, grounded in
    the home report's real features + specs. Fetches /analyze/buyer-appeal on mount. */
-function BuyerAppealSection({homeReport, market, specs, biBase}) {
+function BuyerAppealSection({homeReport, market, specs, biBase, submissionId}) {
   const [text, setText] = useState(null);
   const [loading, setLoading] = useState(false);
+  useEffect(() => {  // persist the buyer-appeal paragraph to the submission
+    if (submissionId && text) patchSubmission(biBase, submissionId, { buyer_appeal: text });
+  }, [submissionId, text]);
   useEffect(() => {
     if (!homeReport || !homeReport.overall_quality_rating) return;
     let cancelled = false;
@@ -2683,11 +2692,11 @@ function App() {
                 redfinMarket={mapped.redfinMarket}
               />
 
-              <NeighborhoodSection address={result?.address || location} biBase={biBase} marketContext={null}/>
+              <NeighborhoodSection address={result?.address || location} biBase={biBase} marketContext={null} submissionId={submissionId}/>
 
-              <CompsSection zipcode={result?.zipcode || zipcode} address={result?.address || location} propertyType={propertyType} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} yearBuilt={yearBuilt} listingPrice={listingPrice} biBase={biBase}/>
+              <CompsSection zipcode={result?.zipcode || zipcode} address={result?.address || location} propertyType={propertyType} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} yearBuilt={yearBuilt} listingPrice={listingPrice} biBase={biBase} submissionId={submissionId}/>
 
-              <BuyerAppealSection homeReport={result?.home_report} market={result?.bi_analysis} biBase={biBase}
+              <BuyerAppealSection homeReport={result?.home_report} market={result?.bi_analysis} biBase={biBase} submissionId={submissionId}
                 specs={{beds:bedrooms||null, baths:bathrooms||null, sqft:sqft||null, year_built:yearBuilt||null, listing_price:listingPrice||null}}/>
 
               <div id="ai-section">

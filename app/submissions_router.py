@@ -57,6 +57,9 @@ class SubmissionPatch(BaseModel):
     listing_text: str | None = None
     listing_style: str | None = None  # the recommended staging style the listing was generated for
     photo_urls: list[str] | None = None
+    neighborhood: Any | None = None     # /analyze/neighborhood result
+    comps: Any | None = None            # /analyze/comps result (incl. market positioning in its narrative)
+    buyer_appeal: str | None = None     # /analyze/buyer-appeal paragraph
 
 
 class StagingRunIn(BaseModel):
