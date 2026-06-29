@@ -75,6 +75,43 @@ class StagingRunIn(BaseModel):
 _MISSING_COL = re.compile(r"Could not find the '([^']+)' column")
 
 
+def _uad_to_10(decimal: Any) -> float | None:
+    """UAD 1.0–6.9 decimal -> 1–10 display score (same formula as the frontend's
+    uadTo10: lower UAD = better = higher 10-score)."""
+    if decimal is None:
+        return None
+    try:
+        d = float(decimal)
+    except (TypeError, ValueError):
+        return None
+    return round(max(1.0, min(10.0, 10 - (d - 1) * 1.2)), 2)
+
+
+def _enrich_home_report(hr: Any) -> Any:
+    """Add 1–10 scores to the home report (overall + per room) alongside the UAD
+    fields, so the stored copy carries the same 1–10 the UI shows."""
+    if not isinstance(hr, dict):
+        return hr
+    out = dict(hr)
+    if out.get("overall_quality_decimal") is not None:
+        out["overall_quality_10"] = _uad_to_10(out["overall_quality_decimal"])
+    if out.get("overall_condition_decimal") is not None:
+        out["overall_condition_10"] = _uad_to_10(out["overall_condition_decimal"])
+    rooms = out.get("rooms")
+    if isinstance(rooms, list):
+        new_rooms = []
+        for r in rooms:
+            if isinstance(r, dict):
+                r = dict(r)
+                if r.get("quality_decimal") is not None:
+                    r["quality_10"] = _uad_to_10(r["quality_decimal"])
+                if r.get("condition_decimal") is not None:
+                    r["condition_10"] = _uad_to_10(r["condition_decimal"])
+            new_rooms.append(r)
+        out["rooms"] = new_rooms
+    return out
+
+
 async def _sb(method: str, path: str, *, json: Any = None, prefer: str | None = None) -> Any:
     headers = dict(_HEADERS)
     if prefer:
@@ -112,8 +149,10 @@ async def _sb_write(method: str, path: str, body: dict[str, Any], *, prefer: str
 
 @router.post("/submissions")
 async def create_submission(payload: SubmissionIn) -> dict[str, Any]:
-    rows = await _sb_write("POST", "wizard_submissions",
-                           payload.model_dump(exclude_none=True),
+    body = payload.model_dump(exclude_none=True)
+    if "home_report" in body:
+        body["home_report"] = _enrich_home_report(body["home_report"])  # add 1–10 scores
+    rows = await _sb_write("POST", "wizard_submissions", body,
                            prefer="return=representation")
     row = rows[0] if isinstance(rows, list) and rows else (rows or {})
     return {"id": (row or {}).get("id")}
