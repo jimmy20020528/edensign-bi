@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Any
 
 import httpx
@@ -37,6 +38,7 @@ class SubmissionIn(BaseModel):
     bedrooms: int | None = None
     bathrooms: float | None = None
     sqft: int | None = None
+    year_built: int | None = None
     property_type: str | None = None
     listing_price: int | None = None
     agent_name: str | None = None
@@ -67,6 +69,9 @@ class StagingRunIn(BaseModel):
     job_id: str | None = None
 
 
+_MISSING_COL = re.compile(r"Could not find the '([^']+)' column")
+
+
 async def _sb(method: str, path: str, *, json: Any = None, prefer: str | None = None) -> Any:
     headers = dict(_HEADERS)
     if prefer:
@@ -81,38 +86,47 @@ async def _sb(method: str, path: str, *, json: Any = None, prefer: str | None = 
     return r.json() if r.content else None
 
 
+async def _sb_write(method: str, path: str, body: dict[str, Any], *, prefer: str) -> Any:
+    """Write that self-heals around columns the table doesn't have yet: on a
+    'column not found' error (PGRST204) it drops the named column and retries, so
+    core fields always persist and new columns (year_built, listing_style, ...)
+    light up automatically once they're added to the table."""
+    cur = dict(body)
+    for _ in range(8):
+        try:
+            return await _sb(method, path, json=cur, prefer=prefer)
+        except HTTPException as e:
+            m = _MISSING_COL.search(str(e.detail))
+            if m and m.group(1) in cur:
+                logger.warning("column '%s' missing — dropping it and retrying", m.group(1))
+                cur.pop(m.group(1), None)
+                if not cur:
+                    return None
+                continue
+            raise
+    return None
+
+
 @router.post("/submissions")
 async def create_submission(payload: SubmissionIn) -> dict[str, Any]:
-    rows = await _sb("POST", "wizard_submissions",
-                     json=payload.model_dump(exclude_none=True),
-                     prefer="return=representation")
+    rows = await _sb_write("POST", "wizard_submissions",
+                           payload.model_dump(exclude_none=True),
+                           prefer="return=representation")
     row = rows[0] if isinstance(rows, list) and rows else (rows or {})
-    return {"id": row.get("id")}
+    return {"id": (row or {}).get("id")}
 
 
 @router.patch("/submissions/{submission_id}")
 async def update_submission(submission_id: str, payload: SubmissionPatch) -> dict[str, Any]:
     body = payload.model_dump(exclude_none=True)
-    if not body:
-        return {"ok": True}
-    path = f"wizard_submissions?id=eq.{submission_id}"
-    try:
-        await _sb("PATCH", path, json=body, prefer="return=minimal")
-    except HTTPException as e:
-        # Self-heal: if listing_style's column hasn't been added yet (PGRST204),
-        # retry without it so listing_text still saves.
-        if "PGRST204" in str(e.detail) and "listing_style" in body:
-            logger.warning("listing_style column missing — saving listing_text only")
-            body.pop("listing_style", None)
-            if body:
-                await _sb("PATCH", path, json=body, prefer="return=minimal")
-        else:
-            raise
+    if body:
+        await _sb_write("PATCH", f"wizard_submissions?id=eq.{submission_id}",
+                        body, prefer="return=minimal")
     return {"ok": True}
 
 
 @router.post("/staging-runs")
 async def create_staging_run(payload: StagingRunIn) -> dict[str, Any]:
-    await _sb("POST", "staging_runs",
-              json=payload.model_dump(exclude_none=True), prefer="return=minimal")
+    await _sb_write("POST", "staging_runs",
+                    payload.model_dump(exclude_none=True), prefer="return=minimal")
     return {"ok": True}

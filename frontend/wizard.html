@@ -910,6 +910,7 @@ async function saveSubmission(base, inputs, data) {
         bedrooms: inputs.bedrooms !== "" ? parseInt(inputs.bedrooms) : null,
         bathrooms: inputs.bathrooms !== "" ? parseFloat(inputs.bathrooms) : null,
         sqft: inputs.sqft !== "" ? parseInt(inputs.sqft) : null,
+        year_built: (inputs.yearBuilt !== "" && inputs.yearBuilt != null) ? parseInt(inputs.yearBuilt) : null,
         property_type: inputs.propertyType || null,
         listing_price: inputs.listingPrice !== "" ? parseInt(inputs.listingPrice) : null,
         agent_name: inputs.agentName?.trim() || null,
@@ -2430,7 +2431,7 @@ function App() {
       // Photos upload in the background and patch their URLs in afterwards.
       saveSubmission(
         apiBase,
-        {address:location.trim(), zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls:[]},
+        {address:location.trim(), zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, yearBuilt, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls:[]},
         data
       ).then(id => {
         if (!id) return;
