@@ -12,6 +12,15 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Remember walk-through mode across restarts: once started with WALKTHROUGH=1 it stays
+# on for later `./deploy.sh restart` — so a plain restart never silently drops
+# /walkthrough (bi would otherwise re-point at :8003, which has no /walkthrough).
+# Turn it off explicitly with WALKTHROUGH=0.
+MARKER=".walkthrough.on"
+if [ "${WALKTHROUGH:-}" = "0" ]; then rm -f "$MARKER"; WALKTHROUGH=""; fi
+if [ -n "${WALKTHROUGH:-}" ]; then touch "$MARKER"; fi
+if [ -f "$MARKER" ]; then WALKTHROUGH=1; fi
+
 if [ -n "${WALKTHROUGH:-}" ]; then
   # cv-models on :8188 (internal) for /walkthrough; bi:80 proxies to it. run.sh only
   # touches :8188, so the live classify on :8003 is left alone.
