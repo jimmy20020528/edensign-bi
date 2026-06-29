@@ -941,8 +941,10 @@ async function patchSubmission(base, submissionId, fields) {
 }
 
 async function updateSubmissionListing(base, submissionId, listingText, style) {
-  // NB: wizard_submissions has no listing_style column — persist listing_text only.
-  await patchSubmission(base, submissionId, { listing_text: listingText });
+  // listing_text + listing_style update together on every (re)generate, so they
+  // stay in sync. The backend drops listing_style if that column isn't there yet,
+  // so listing_text still saves either way.
+  await patchSubmission(base, submissionId, { listing_text: listingText, listing_style: style });
 }
 
 async function uploadPhotos(files, uploadBase) {

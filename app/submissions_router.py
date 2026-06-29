@@ -53,8 +53,8 @@ class SubmissionIn(BaseModel):
 
 class SubmissionPatch(BaseModel):
     listing_text: str | None = None
+    listing_style: str | None = None  # the recommended staging style the listing was generated for
     photo_urls: list[str] | None = None
-    # NB: wizard_submissions has no listing_style column today.
 
 
 class StagingRunIn(BaseModel):
@@ -93,9 +93,21 @@ async def create_submission(payload: SubmissionIn) -> dict[str, Any]:
 @router.patch("/submissions/{submission_id}")
 async def update_submission(submission_id: str, payload: SubmissionPatch) -> dict[str, Any]:
     body = payload.model_dump(exclude_none=True)
-    if body:
-        await _sb("PATCH", f"wizard_submissions?id=eq.{submission_id}",
-                  json=body, prefer="return=minimal")
+    if not body:
+        return {"ok": True}
+    path = f"wizard_submissions?id=eq.{submission_id}"
+    try:
+        await _sb("PATCH", path, json=body, prefer="return=minimal")
+    except HTTPException as e:
+        # Self-heal: if listing_style's column hasn't been added yet (PGRST204),
+        # retry without it so listing_text still saves.
+        if "PGRST204" in str(e.detail) and "listing_style" in body:
+            logger.warning("listing_style column missing — saving listing_text only")
+            body.pop("listing_style", None)
+            if body:
+                await _sb("PATCH", path, json=body, prefer="return=minimal")
+        else:
+            raise
     return {"ok": True}
 
 
