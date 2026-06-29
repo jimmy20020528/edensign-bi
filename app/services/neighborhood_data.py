@@ -198,14 +198,15 @@ def analyze_neighborhood(
     Does NOT call the LLM — see generate_narrative_openai for that.
     """
     key = _cache_key(address, zipcode)
-    if key in _CACHE:
+    if key in _CACHE and _CACHE[key].get("amenities"):  # ignore poisoned (empty) cache → refetch
         return _CACHE[key]
     cache_file = DATA_DIR / f"neighborhood_{key}.json"
     if cache_file.exists() and (time.time() - cache_file.stat().st_mtime) <= CACHE_MAX_AGE_DAYS * 86400:
         try:
             data = json.loads(cache_file.read_text())
-            _CACHE[key] = data
-            return data
+            if data.get("amenities"):  # skip empties from a past Overpass failure
+                _CACHE[key] = data
+                return data
         except Exception:
             pass
 
@@ -233,12 +234,15 @@ def analyze_neighborhood(
         except Exception as exc:
             logger.warning("Neighborhood: walk score failed: %s", exc)
 
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    try:
-        cache_file.write_text(json.dumps(out, separators=(",", ":")))
-    except Exception:
-        pass
-    _CACHE[key] = out
+    # Only cache a successful amenities fetch — don't let a transient Overpass failure
+    # (empty amenities) get pinned for 30 days; an empty result will simply retry.
+    if out["amenities"]:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            cache_file.write_text(json.dumps(out, separators=(",", ":")))
+        except Exception:
+            pass
+        _CACHE[key] = out
     return out
 
 
