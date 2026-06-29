@@ -1919,6 +1919,13 @@ function fmt10(decimal) {
   const v = uadTo10(decimal);
   return v == null ? null : v.toFixed(1);
 }
+/* Backend suggestion/rationale text sometimes embeds raw UAD codes ("Rooms at C4
+   condition… toward C3"). Replace any standalone Q1-6 / C1-6 with the customer-facing
+   1-10 score so the UI never surfaces the internal codes. Display-only. */
+function scrubUAD(s) {
+  if (typeof s !== "string") return s;
+  return s.replace(/\b([QC])([1-6])\b/g, (_m, _l, d) => `${fmt10(Number(d))}/10`);
+}
 
 function HomeReportDisplay({hr}) {
   if (!hr || !hr.overall_quality_rating) return null;
@@ -1962,7 +1969,7 @@ function HomeReportDisplay({hr}) {
               <div className="room-name">{r.room_type.replace(/_/g," ")}</div>
               <div className="room-rating">Quality {fmt10(r.quality_decimal) ?? r.quality_rating} · Condition {fmt10(r.condition_decimal) ?? r.condition_rating}</div>
             </div>
-            <div className="room-rationale">{r.quality_rationale}</div>
+            <div className="room-rationale">{scrubUAD(r.quality_rationale)}</div>
             {r.notable_features?.length > 0 && (
               <div className="room-features">
                 {r.notable_features.slice(0, 8).map((f, j) => (
@@ -1979,10 +1986,10 @@ function HomeReportDisplay({hr}) {
           {allActions.map((a, i) => (
             <div key={i} className="action-block">
               <div className="action-head-row">
-                <div className="action-title">{a.text}</div>
+                <div className="action-title">{scrubUAD(a.text)}</div>
                 <div className="action-cost-tag">{a.estimated_cost_range || ""}</div>
               </div>
-              <div className="action-desc">{a.detail}</div>
+              <div className="action-desc">{scrubUAD(a.detail)}</div>
               <div className="action-chips">
                 <span className={`a-chip roi-${a.roi_tier}`}>ROI {a.roi_tier}</span>
                 <span className={`a-chip cost-${a.cost_tier}`}>Cost {a.cost_tier}</span>
