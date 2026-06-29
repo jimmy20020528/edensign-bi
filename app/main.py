@@ -123,20 +123,30 @@ async def analyze_by_zipcode(
             detail="Invalid scoring_mode. Use one of: heuristic, model, hybrid.",
         )
 
+    async def _llm() -> dict:
+        from app.services.llm_market_estimator import estimate_market_for_zip
+        return await estimate_market_for_zip(zipcode, objective, scoring_mode)
+
     if app.state.pool is None:
         try:
-            from app.services.llm_market_estimator import estimate_market_for_zip
-            return await estimate_market_for_zip(zipcode, objective, scoring_mode)
+            return await _llm()
         except Exception as e:
             raise HTTPException(status_code=503, detail=f"LLM fallback failed: {e}") from e
 
     async with app.state.pool.acquire() as conn:
         try:
-            return await analyze_zipcode(
+            result = await analyze_zipcode(
                 conn, zipcode, objective=objective, scoring_mode=scoring_mode
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Analyze failed: {e}") from e
+    # DB has no data for this ZIP (only a few ZIPs are seeded) → use the LLM estimator
+    if not result or not result.get("recommended_styles"):
+        try:
+            return await _llm()
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"LLM fallback failed: {e}") from e
+    return result
 
 
 class ExplainByZipcodeRequest(BaseModel):
@@ -171,12 +181,14 @@ async def analyze_and_explain_by_zipcode(payload: ExplainByZipcodeRequest) -> di
         )
 
     try:
+        from app.services.llm_market_estimator import estimate_market_for_zip
         if app.state.pool is None:
-            from app.services.llm_market_estimator import estimate_market_for_zip
             analysis = await estimate_market_for_zip(zipcode, objective, scoring_mode)
         else:
             async with app.state.pool.acquire() as conn:
                 analysis = await _get_analysis(conn)
+            if not analysis or not analysis.get("recommended_styles"):  # ZIP not in DB
+                analysis = await estimate_market_for_zip(zipcode, objective, scoring_mode)
         llm = await explain_analysis_with_openai(
             analysis=analysis,
             client_context=payload.client_context,
