@@ -36,6 +36,12 @@ cp .env.example .env          # fill in the keys
 One command, no flags — see **[`DEPLOY.md`](./DEPLOY.md)** for the full guide,
 **[`API.md`](./API.md)** / **[`FRONTEND.md`](./FRONTEND.md)** for how a frontend calls it.
 
+> **2026-07-02:** Added `POST /v2/pipeline/run` (JSON `{image_urls: [...]}`) alongside
+> the existing multipart `/pipeline/run`. The multipart body scales with total photo
+> size and can exceed the production proxy's 6MB request limit once a listing has more
+> than a few full-resolution photos, causing a timeout — use `/v2/pipeline/run` (upload
+> photos via `/upload` first, then send the URLs) for real listings. See `API.md`.
+
 **Local operator + production guide (nginx single-origin, systemd):
 [`QUICKSTART.md`](./QUICKSTART.md).**
 
