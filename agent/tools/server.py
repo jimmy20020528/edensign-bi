@@ -259,38 +259,15 @@ async def classify_rooms(files: list[UploadFile] = File(...)) -> dict[str, Any]:
 # ============================================================
 # WIZARD PIPELINE — one-shot endpoint
 # ============================================================
-@app.post("/pipeline/run")
-async def pipeline_run(
-    files: list[UploadFile] = File(...),
-    zipcode: str | None = Form(None),
-    address: str | None = Form(None),
-    bedrooms: int | None = Form(None),
-    bathrooms: float | None = Form(None),
-    sqft: int | None = Form(None),
-    property_type: str = Form("residential"),
-    listing_price: int | None = Form(None),
-    agent_name: str | None = Form(None),
-    agent_contact: str | None = Form(None),
-    room_groups: str | None = Form(None),
+async def _run_pipeline_core(
+    files_payload: list[tuple[str, tuple[str, bytes, str]]],
+    n_photos: int,
+    zipcode: str | None,
+    address: str | None,
+    room_groups: str | None,
 ) -> dict[str, Any]:
-    """Photos + zipcode_or_address -> full Edensign report.
-
-    Runs home-report-ai and BI in parallel, then composes a listing
-    description. Returns a unified JSON the frontend can render.
-    """
-    if not files:
-        raise HTTPException(status_code=400, detail="No images provided.")
-    if len(files) > 60:
-        raise HTTPException(status_code=400, detail="Maximum 60 images.")
-    if not address and not (zipcode and len(zipcode) == 5 and zipcode.isdigit()):
-        raise HTTPException(status_code=400, detail="Provide either address or 5-digit zipcode.")
-
-    # Read all photos into memory (so we can replay multipart payload)
-    files_payload = []
-    for f in files:
-        content = await f.read()
-        files_payload.append(("files", (f.filename, content, f.content_type or "image/jpeg")))
-
+    """Shared body of /pipeline/run and /v2/pipeline/run, given photo bytes
+    already loaded into `files_payload` (multipart tuples for httpx)."""
     async def call_home_report() -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=180.0) as client:
             r = await client.post(f"{HOME_REPORT_BASE}/report", files=files_payload)
@@ -367,13 +344,94 @@ async def pipeline_run(
     return {
         "zipcode": resolved_zipcode,
         "address": address,
-        "n_photos": len(files),
+        "n_photos": n_photos,
         "home_report": home_report,
         "bi_analysis": bi_analysis,
         "bi_explain": bi_explain,
         "walkthrough": walkthrough,
         "listing_text": None,
     }
+
+
+@app.post("/pipeline/run")
+async def pipeline_run(
+    files: list[UploadFile] = File(...),
+    zipcode: str | None = Form(None),
+    address: str | None = Form(None),
+    bedrooms: int | None = Form(None),
+    bathrooms: float | None = Form(None),
+    sqft: int | None = Form(None),
+    property_type: str = Form("residential"),
+    listing_price: int | None = Form(None),
+    agent_name: str | None = Form(None),
+    agent_contact: str | None = Form(None),
+    room_groups: str | None = Form(None),
+) -> dict[str, Any]:
+    """Photos + zipcode_or_address -> full Edensign report (multipart upload).
+
+    Runs home-report-ai and BI in parallel. Returns a unified JSON the
+    frontend can render. See /v2/pipeline/run for the JSON image_urls variant
+    (use that one for large photo sets — this multipart body can exceed the
+    production proxy's request-size limit).
+    """
+    if not files:
+        raise HTTPException(status_code=400, detail="No images provided.")
+    if len(files) > 60:
+        raise HTTPException(status_code=400, detail="Maximum 60 images.")
+    if not address and not (zipcode and len(zipcode) == 5 and zipcode.isdigit()):
+        raise HTTPException(status_code=400, detail="Provide either address or 5-digit zipcode.")
+
+    # Read all photos into memory (so we can replay multipart payload)
+    files_payload = []
+    for f in files:
+        content = await f.read()
+        files_payload.append(("files", (f.filename, content, f.content_type or "image/jpeg")))
+
+    return await _run_pipeline_core(files_payload, len(files), zipcode, address, room_groups)
+
+
+class PipelineRunV2Input(BaseModel):
+    image_urls: list[str]
+    zipcode: str | None = None
+    address: str | None = None
+    bedrooms: int | None = None
+    bathrooms: float | None = None
+    sqft: int | None = None
+    property_type: str = "residential"
+    listing_price: int | None = None
+    agent_name: str | None = None
+    agent_contact: str | None = None
+    room_groups: str | None = None
+
+
+@app.post("/v2/pipeline/run")
+async def pipeline_run_v2(req: PipelineRunV2Input) -> dict[str, Any]:
+    """Same as /pipeline/run, but takes already-uploaded image URLs (via
+    /upload) instead of multipart file bytes.
+
+    /pipeline/run's multipart body carries every photo's raw bytes, which can
+    exceed the 6MB request-body limit of the AWS-Lambda-fronted production
+    proxy once a listing has more than a handful of full-resolution photos —
+    the request then times out before it reaches this service. This endpoint
+    keeps the client → backend request small (a JSON list of URLs) and
+    downloads the photo bytes itself.
+    """
+    if not req.image_urls:
+        raise HTTPException(status_code=400, detail="No images provided.")
+    if len(req.image_urls) > 60:
+        raise HTTPException(status_code=400, detail="Maximum 60 images.")
+    if not req.address and not (req.zipcode and len(req.zipcode) == 5 and req.zipcode.isdigit()):
+        raise HTTPException(status_code=400, detail="Provide either address or 5-digit zipcode.")
+
+    files_payload = []
+    async with httpx.AsyncClient(timeout=60.0) as dl_client:
+        for i, url in enumerate(req.image_urls):
+            r = await dl_client.get(url)
+            r.raise_for_status()
+            filename = url.split("/")[-1] or f"image_{i}.jpg"
+            files_payload.append(("files", (filename, r.content, "image/jpeg")))
+
+    return await _run_pipeline_core(files_payload, len(req.image_urls), req.zipcode, req.address, req.room_groups)
 
 
 def _extract_home_report_highlights(home_report: Any) -> str | None:

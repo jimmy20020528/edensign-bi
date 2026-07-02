@@ -2386,7 +2386,6 @@ function App() {
   const classifyRerunRef = useRef(false);
   const [stagingModalStyle, setStagingModalStyle] = useState(null);
   const [stagingTop1, setStagingTop1] = useState("");
-  const [stagingBase] = useState(resolveApiBase);
   const [submissionId, setSubmissionId] = useState(null);
   const [listingText, setListingText] = useState(null);
   const [listingStyle, setListingStyle] = useState(null);
@@ -2425,26 +2424,37 @@ function App() {
     const t3 = setTimeout(()=>setProgressStep(3), 28000);
 
     try {
-      const form = new FormData();
+      // Upload photos first and send /v2/pipeline/run their URLs instead of the
+      // raw bytes: the old multipart /pipeline/run body scales with total photo
+      // size and blows past the 6MB request-body limit on the production
+      // AWS-Lambda-fronted proxy once a listing has more than a few full-res
+      // photos, causing a timeout. /upload sends one photo per request instead.
+      const photoUrls = await uploadPhotos(files, apiBase);
+      if (photoUrls.length !== files.length) {
+        throw new Error("Some photos failed to upload — please try again.");
+      }
+
       const locTrim = location.trim();
-      form.append("address", locTrim);
+      const body = {image_urls: photoUrls, address: locTrim, property_type: propertyType};
       const zipTrim = zipcode.trim();
-      if (zipTrim.length === 5 && /^\d{5}$/.test(zipTrim)) form.append("zipcode", zipTrim);
-      if (bedrooms !== "") form.append("bedrooms", bedrooms);
-      if (bathrooms !== "") form.append("bathrooms", bathrooms);
-      if (sqft !== "") form.append("sqft", sqft);
-      form.append("property_type", propertyType);
-      if (listingPrice !== "") form.append("listing_price", listingPrice);
-      if (agentName.trim()) form.append("agent_name", agentName.trim());
-      if (agentContact.trim()) form.append("agent_contact", agentContact.trim());
-      files.forEach(f => form.append("files", f, f.name));
+      if (zipTrim.length === 5 && /^\d{5}$/.test(zipTrim)) body.zipcode = zipTrim;
+      if (bedrooms !== "") body.bedrooms = parseInt(bedrooms, 10);
+      if (bathrooms !== "") body.bathrooms = parseFloat(bathrooms);
+      if (sqft !== "") body.sqft = parseInt(sqft, 10);
+      if (listingPrice !== "") body.listing_price = parseInt(listingPrice, 10);
+      if (agentName.trim()) body.agent_name = agentName.trim();
+      if (agentContact.trim()) body.agent_contact = agentContact.trim();
       // Send the user-confirmed room grouping so the pipeline can build the
       // walk-through order from it (not the raw, possibly-wrong classification).
       if (classificationResult?.photos) {
         const rg = classificationResult.photos.map(p => ({index:p.index, room_type:p.room_type, group_id:p.group_id}));
-        form.append("room_groups", JSON.stringify(rg));
+        body.room_groups = JSON.stringify(rg);
       }
-      const r = await fetch(`${apiBase}/pipeline/run`, {method:"POST", body: form});
+      const r = await fetch(`${apiBase}/v2/pipeline/run`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(body),
+      });
       if (!r.ok) {
         const t = await r.text();
         throw new Error(`HTTP ${r.status}: ${t.slice(0,300)}`);
@@ -2455,18 +2465,12 @@ function App() {
       setResult(data);
       // Create the submission row immediately so its id is ready before the
       // auto-generated listing finishes (otherwise listing_text never gets saved).
-      // Photos upload in the background and patch their URLs in afterwards.
+      // photoUrls are already known (uploaded above), so no second upload pass.
       saveSubmission(
         apiBase,
-        {address:location.trim(), zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, yearBuilt, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls:[]},
+        {address:locTrim, zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, yearBuilt, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
         data
-      ).then(id => {
-        if (!id) return;
-        setSubmissionId(id);
-        uploadPhotos(files, stagingBase).then(photoUrls => {
-          if (photoUrls.length) patchSubmission(apiBase, id, { photo_urls: photoUrls });
-        });
-      });
+      ).then(id => { if (id) setSubmissionId(id); });
       // Use Style Atlas's mapAnalysis to produce the same display shape.
       // bi_explain is the full /analyze/explain response: { analysis, llm }
       // mapAnalysis expects the llm part as 2nd arg.

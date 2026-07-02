@@ -123,6 +123,21 @@ Bundles condition report + market + neighborhood (+ walk-through if you pass
 
 Response: `{ zipcode, address, n_photos, home_report, bi_analysis, bi_explain, walkthrough, listing_text }`.
 
+**Prefer `POST /v2/pipeline/run` for real listings.** Same response shape, but
+JSON with `image_urls` (from `/upload`) instead of multipart file bytes — the
+multipart body above scales with total photo size and can exceed the
+production proxy's request-size limit once a listing has more than a
+handful of full-resolution photos, causing a timeout.
+
+```jsonc
+{ "image_urls": ["https://.../a.jpg", "..."],   // upload each via POST /upload first
+  "address": "42 Tappan St, Everett, MA 02149", // or "zipcode"
+  "bedrooms": 3, "bathrooms": 2, "sqft": 1500, "property_type": "residential",
+  "listing_price": 650000, "agent_name": "...", "agent_contact": "...",
+  "room_groups": "[{...}]"                       // optional, same as /pipeline/run
+}
+```
+
 ---
 
 ## Persistence (optional) — save a submission to the DB
