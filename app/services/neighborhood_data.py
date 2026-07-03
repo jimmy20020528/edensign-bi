@@ -45,6 +45,22 @@ _USER_AGENT = "edensign-bi/1.0 (neighborhood analysis; welcome@edensign.io)"
 _nomi = pgeocode.Nominatim("us")
 _CACHE: dict[str, dict] = {}
 
+# Overpass is a free, frequently-overloaded public API; a single endpoint times
+# out often enough to blank the whole Amenities section. Try mirrors in order so
+# a transient failure on one is recovered from another (all key-free, same API).
+# Only full-planet mirrors belong here — region-limited ones (e.g. overpass.osm.ch,
+# Switzerland only) would "succeed" with 0 results for US points and wrongly
+# short-circuit the fallback. Per-mirror timeout is kept low so several slow
+# mirrors don't stack up into a minute-long wait.
+OVERPASS_MIRRORS: list[str] = [
+    "https://overpass-api.de/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+]
+_OVERPASS_TIMEOUT = 10.0        # per-mirror; a healthy mirror answers in 1-6s
+_OVERPASS_TOTAL_BUDGET = 25.0   # stop trying mirrors past this wall-clock (s)
+
 # Overpass amenity buckets: (category, [(osm_key, osm_value), ...]).
 # Order = display priority in the report's Amenities & Lifestyle section.
 _POI_CATEGORIES: list[tuple[str, list[tuple[str, str]]]] = [
@@ -121,15 +137,25 @@ def fetch_pois(lat: float, lon: float, radius_m: int = 4000, per_category: int =
             # nodes and ways (ways via 'out center' to get a coordinate)
             selectors.append(f'node["{k}"="{v}"](around:{radius_m},{lat},{lon});')
             selectors.append(f'way["{k}"="{v}"](around:{radius_m},{lat},{lon});')
-    query = f"[out:json][timeout:25];({''.join(selectors)});out center tags 200;"
+    query = f"[out:json][timeout:20];({''.join(selectors)});out center tags 200;"
 
-    try:
-        with httpx.Client(timeout=30.0, headers={"User-Agent": _USER_AGENT}) as client:
-            r = client.post("https://overpass-api.de/api/interpreter", data={"data": query})
-            r.raise_for_status()
-            elements = r.json().get("elements", [])
-    except Exception as exc:
-        logger.warning("Neighborhood: Overpass query failed: %s", exc)
+    elements = None
+    deadline = time.monotonic() + _OVERPASS_TOTAL_BUDGET
+    for endpoint in OVERPASS_MIRRORS:
+        if time.monotonic() > deadline:
+            logger.warning("Neighborhood: Overpass time budget exhausted, stopping fallback")
+            break
+        try:
+            with httpx.Client(timeout=_OVERPASS_TIMEOUT, headers={"User-Agent": _USER_AGENT}) as client:
+                r = client.post(endpoint, data={"data": query})
+                r.raise_for_status()
+                elements = r.json().get("elements", [])
+            break  # this mirror answered — stop trying the rest
+        except Exception as exc:
+            logger.warning("Neighborhood: Overpass mirror %s failed: %s", endpoint, exc)
+            continue
+    if elements is None:
+        logger.warning("Neighborhood: all Overpass mirrors failed")
         return {}
 
     # map (osm_key, osm_value) -> category for bucketing
