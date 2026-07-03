@@ -113,10 +113,19 @@ then **Run Pipeline** for the full package (market, neighborhood, comps, buyer
 appeal, property assessment 1–10, walk-through order, auto-written listing).
 
 **Via the API** (for integration). The whole package in one call — hit bi:8000,
-which proxies `/pipeline/run` to the agent (so a single origin is enough, same as
-the wizard):
+which proxies the pipeline to the agent (so a single origin is enough, same as
+the wizard). Prefer the JSON `/v2/pipeline/run` (upload photos first, send URLs);
+the multipart `/pipeline/run` below still works but its body can exceed the
+production proxy's 6MB limit with many full-res photos:
 
 ```bash
+# preferred: JSON with pre-uploaded image URLs
+curl -X POST http://localhost:8000/v2/pipeline/run \
+  -H "Content-Type: application/json" \
+  -d '{"image_urls":["https://content.edensign.io/images/a.jpg"],
+       "address":"42 Tappan St, Everett, MA 02149","bedrooms":3,"bathrooms":2,"sqft":1500}'
+
+# legacy multipart (fine for a few photos)
 curl -X POST http://localhost:8000/pipeline/run \
   -F address="42 Tappan St, Everett, MA 02149" \
   -F bedrooms=3 -F bathrooms=2 -F sqft=1500 \
