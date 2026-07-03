@@ -79,7 +79,7 @@ async def _call_openai(image_path: Path, prompt: str) -> str:
 async def _call_gemini(image_path: Path, prompt: str) -> str:
     api_key = os.environ["GEMINI_API_KEY"]
     b64, media_type = _encode_image(image_path)
-    model = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")  # 2.0-flash retired (404 on generateContent)
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     body = {
         "contents": [{

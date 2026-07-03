@@ -7,6 +7,7 @@ from pathlib import Path
 import argparse
 import numpy as np
 import joblib
+from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
@@ -56,8 +57,7 @@ def main():
 
     print("\n5-fold CV on training portion...")
     cv_scores = cross_val_score(
-        LogisticRegression(solver="lbfgs", C=1.0, max_iter=2000,
-                           class_weight="balanced", random_state=42),
+        clone(clf),
         X_train, y_train, cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=42),
         scoring="accuracy", n_jobs=-1,
     )
@@ -67,11 +67,13 @@ def main():
     print(f"\nHeld-out test accuracy: {test_acc:.3f}")
 
     y_pred = clf.predict(X_test)
-    report = classification_report(y_test, y_pred, target_names=class_names, zero_division=0)
+    labels = list(range(len(class_names)))
+    report = classification_report(y_test, y_pred, labels=labels,
+                                   target_names=class_names, zero_division=0)
     print("\n=== Classification report (test set) ===")
     print(report)
 
-    cm = confusion_matrix(y_test, y_pred)
+    cm = confusion_matrix(y_test, y_pred, labels=labels)
     print("=== Confusion matrix (rows=true, cols=pred) ===")
     name_w = max(len(n) for n in class_names) + 1
     header = " " * name_w + " ".join(f"{n[:7]:>8}" for n in class_names)

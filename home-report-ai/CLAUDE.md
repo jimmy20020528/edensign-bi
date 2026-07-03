@@ -54,7 +54,8 @@ images → [Stage1: VLM describe] → ImageAnalysis
 - [x] `src/api/main.py` — FastAPI endpoint `/report`
 - [x] Tests: stage2, stage3, stage4, validators
 
-**Next:**
+**Not yet done:**
+- [ ] Run tests and verify they pass
+- [ ] Stage 1 integration test with real/mock VLM call
 - [ ] Expand suggestions.yaml to 50-100 entries
-- [ ] Accept `room_type` and `room_groups` hints (skip Stage 1 when cv-models is integrated)
-- [ ] More integration tests (real VLM call against fixture images)
+- [ ] Frontend (out of scope for now)

@@ -6,16 +6,52 @@ that Langflow can call. Runs on port 8002.
 """
 from __future__ import annotations
 
+import asyncio
+import logging
 import os
+import re
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 import httpx
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+
+def _zipcode_from(address: str | None, zipcode: str | None) -> str | None:
+    """Return an explicit zipcode, or extract a 5-digit US zip from address."""
+    if zipcode and len(zipcode) == 5 and zipcode.isdigit():
+        return zipcode
+    if address:
+        m = re.search(r"\b(\d{5})\b", address)
+        if m:
+            return m.group(1)
+    return None
+
+
+async def _geocode_zipcode(address: str) -> str | None:
+    """Call Census Bureau geocoder to resolve a free-form address → zipcode."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(
+                "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress",
+                params={"address": address, "benchmark": "2020", "format": "json"},
+            )
+            if r.status_code != 200:
+                return None
+            matches = r.json().get("result", {}).get("addressMatches", [])
+            if not matches:
+                return None
+            z = str(matches[0].get("addressComponents", {}).get("zip", "")).strip()[:5]
+            return z if len(z) == 5 and z.isdigit() else None
+    except Exception:
+        return None
+
 BI_BASE = os.getenv("BI_BASE", "http://localhost:8000")
-HOME_REPORT_BASE = os.getenv("HOME_REPORT_BASE", "http://localhost:8001")
+HOME_REPORT_BASE = os.getenv("HOME_REPORT_BASE", "http://localhost:8004")
+CV_MODELS_BASE = os.getenv("CV_MODELS_BASE", "http://localhost:8003")
 
 app = FastAPI(title="Edensign Agent Tools", version="0.1.0")
 app.add_middleware(
@@ -28,7 +64,43 @@ app.add_middleware(
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "tools": ["analyze_zipcode", "generate_listing", "generate_home_report"]}
+    return {"status": "ok", "tools": ["analyze_zipcode", "generate_listing", "generate_home_report", "classify_rooms"]}
+
+
+# ============================================================
+# UPLOAD + STAGING — proxy to BI (port 8000)
+# ============================================================
+class UploadImageRequest(BaseModel):
+    filename: str
+    content_type: str = "image/jpeg"
+    data: str
+
+
+@app.post("/upload")
+async def upload_image(req: UploadImageRequest) -> dict[str, Any]:
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        r = await client.post(f"{BI_BASE}/upload", json=req.model_dump())
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail=r.text[:300])
+        return r.json()
+
+
+@app.post("/staging/run")
+async def staging_run_proxy(req: dict) -> dict[str, Any]:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        r = await client.post(f"{BI_BASE}/staging/run", json=req)
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail=r.text[:300])
+        return r.json()
+
+
+@app.get("/staging/status/{job_id}")
+async def staging_status_proxy(job_id: str) -> dict[str, Any]:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        r = await client.get(f"{BI_BASE}/staging/status/{job_id}")
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail=r.text[:300])
+        return r.json()
 
 
 # ============================================================
@@ -84,7 +156,7 @@ async def generate_listing(req: GenerateListingInput) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=30.0) as client:
         r = await client.get(
             f"{BI_BASE}/analyze/by-zipcode",
-            params={"zipcode": req.zipcode, "objective": "balanced", "scoring_mode": "hybrid"},
+            params={"zipcode": req.zipcode, "objective": "balanced", "scoring_mode": "heuristic"},
         )
         if r.status_code != 200:
             raise HTTPException(status_code=502, detail=f"BI API error: {r.text[:200]}")
@@ -134,8 +206,8 @@ async def generate_home_report(files: list[UploadFile] = File(...)) -> dict[str,
     """Upload property photos, get a UAD-standard home assessment report."""
     if not files:
         raise HTTPException(status_code=400, detail="No images provided.")
-    if len(files) > 30:
-        raise HTTPException(status_code=400, detail="Maximum 30 images per request.")
+    if len(files) > 60:
+        raise HTTPException(status_code=400, detail="Maximum 60 images per request.")
 
     files_payload = []
     for f in files:
@@ -149,10 +221,138 @@ async def generate_home_report(files: list[UploadFile] = File(...)) -> dict[str,
         return r.json()
 
 
+# ============================================================
+# CLASSIFY ROOMS — proxy to cv-models service
+# ============================================================
+@app.post("/classify-rooms")
+async def classify_rooms(files: list[UploadFile] = File(...)) -> dict[str, Any]:
+    """Proxy room classification + instance grouping to cv-models (port 8003).
+
+    Returns: {photos: [{index, room_type, occupancy, confidence, group_id}],
+              groups: [{group_id, room_type, occupancy, photo_indices}],
+              walkthrough: {order: [idx...], steps: [null, overlap...],
+                            new_room: [bool...]}}
+    The cv-models response is forwarded verbatim, so `walkthrough` (photo
+    walk-through ordering) passes straight through to the wizard.
+    Returns HTTP 503 if cv-models is not running (wizard handles gracefully).
+    """
+    if not files:
+        raise HTTPException(status_code=400, detail="No images provided.")
+    if len(files) > 60:
+        raise HTTPException(status_code=400, detail="Maximum 60 images per request.")
+
+    files_payload = []
+    for f in files:
+        content = await f.read()
+        files_payload.append(("files", (f.filename, content, f.content_type or "image/jpeg")))
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            r = await client.post(f"{CV_MODELS_BASE}/classify-rooms", files=files_payload)
+            if r.status_code != 200:
+                raise HTTPException(status_code=503, detail="classification_unavailable")
+            return r.json()
+        except httpx.RequestError:
+            raise HTTPException(status_code=503, detail="classification_unavailable")
+
 
 # ============================================================
 # WIZARD PIPELINE — one-shot endpoint
 # ============================================================
+async def _run_pipeline_core(
+    files_payload: list[tuple[str, tuple[str, bytes, str]]],
+    n_photos: int,
+    zipcode: str | None,
+    address: str | None,
+    room_groups: str | None,
+) -> dict[str, Any]:
+    """Shared body of /pipeline/run and /v2/pipeline/run, given photo bytes
+    already loaded into `files_payload` (multipart tuples for httpx)."""
+    async def call_home_report() -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            r = await client.post(f"{HOME_REPORT_BASE}/report", files=files_payload)
+            if r.status_code != 200:
+                return {"error": r.text[:300]}
+            return r.json()
+
+    resolved_zip = _zipcode_from(address, zipcode)
+    if not resolved_zip and address:
+        resolved_zip = await _geocode_zipcode(address)
+        if resolved_zip:
+            logger.info("Geocoded '%s' → %s", address, resolved_zip)
+
+    async def call_bi() -> dict[str, Any]:
+        if not resolved_zip:
+            return {"error": "cannot determine zipcode from address"}
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            params: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "heuristic"}
+            r = await client.get(f"{BI_BASE}/analyze/by-zipcode", params=params)
+            if r.status_code != 200:
+                return {"error": r.text[:300]}
+            return r.json()
+
+    async def call_bi_explain() -> dict[str, Any]:
+        if not resolved_zip:
+            return {"error": "cannot determine zipcode from address"}
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            payload: dict[str, Any] = {"zipcode": resolved_zip, "objective": "balanced", "scoring_mode": "heuristic"}
+            r = await client.post(f"{BI_BASE}/analyze/explain/by-zipcode", json=payload)
+            if r.status_code != 200:
+                return {"error": r.text[:300]}
+            return r.json()
+
+    async def call_walkthrough() -> dict[str, Any] | None:
+        # Photo walk-through order from the user-confirmed groups (cv-models).
+        # Skipped if the frontend didn't send groups (user must classify+confirm first).
+        if not room_groups:
+            return None
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                r = await client.post(
+                    f"{CV_MODELS_BASE}/walkthrough",
+                    files=files_payload,
+                    data={"groups": room_groups},
+                )
+                if r.status_code != 200:
+                    return {"error": f"walkthrough {r.status_code}"}
+                return r.json()
+        except httpx.RequestError:
+            return None  # cv-models down — degrade gracefully
+
+    # bi_explain + walkthrough are independent — start them while home_report runs
+    bi_explain_task = asyncio.create_task(call_bi_explain())
+    walkthrough_task = asyncio.create_task(call_walkthrough())
+
+    try:
+        # home report + BI analysis in parallel (listing needs both)
+        home_report, bi_analysis = await asyncio.gather(
+            call_home_report(), call_bi()
+        )
+
+        # Listing is generated on-demand per chosen style via /generate-listing,
+        # so the pipeline no longer composes it here.
+        pass
+    finally:
+        bi_explain = await bi_explain_task
+        walkthrough = await walkthrough_task
+
+    # Resolved zipcode from BI (if user supplied address, BI returns the geocoded zip)
+    resolved_zipcode = zipcode
+    if isinstance(bi_analysis, dict) and bi_analysis.get("zipcode"):
+        resolved_zipcode = bi_analysis["zipcode"]
+
+    return {
+        "zipcode": resolved_zipcode,
+        "address": address,
+        "n_photos": n_photos,
+        "home_report": home_report,
+        "bi_analysis": bi_analysis,
+        "bi_explain": bi_explain,
+        "walkthrough": walkthrough,
+        "listing_text": None,
+    }
+
+
 @app.post("/pipeline/run")
 async def pipeline_run(
     files: list[UploadFile] = File(...),
@@ -165,18 +365,19 @@ async def pipeline_run(
     listing_price: int | None = Form(None),
     agent_name: str | None = Form(None),
     agent_contact: str | None = Form(None),
+    room_groups: str | None = Form(None),
 ) -> dict[str, Any]:
-    """Photos + zipcode_or_address -> full Edensign report.
+    """Photos + zipcode_or_address -> full Edensign report (multipart upload).
 
-    Runs home-report-ai and BI in parallel, then composes a listing
-    description. Returns a unified JSON the frontend can render.
+    Runs home-report-ai and BI in parallel. Returns a unified JSON the
+    frontend can render. See /v2/pipeline/run for the JSON image_urls variant
+    (use that one for large photo sets — this multipart body can exceed the
+    production proxy's request-size limit).
     """
-    import asyncio
-
     if not files:
         raise HTTPException(status_code=400, detail="No images provided.")
-    if len(files) > 30:
-        raise HTTPException(status_code=400, detail="Maximum 30 images.")
+    if len(files) > 60:
+        raise HTTPException(status_code=400, detail="Maximum 60 images.")
     if not address and not (zipcode and len(zipcode) == 5 and zipcode.isdigit()):
         raise HTTPException(status_code=400, detail="Provide either address or 5-digit zipcode.")
 
@@ -186,83 +387,89 @@ async def pipeline_run(
         content = await f.read()
         files_payload.append(("files", (f.filename, content, f.content_type or "image/jpeg")))
 
-    async def call_home_report() -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=180.0) as client:
-            r = await client.post(f"{HOME_REPORT_BASE}/report", files=files_payload)
-            if r.status_code != 200:
-                return {"error": r.text[:300]}
-            return r.json()
+    return await _run_pipeline_core(files_payload, len(files), zipcode, address, room_groups)
 
-    async def call_bi() -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            params: dict[str, Any] = {"objective": "balanced", "scoring_mode": "hybrid"}
-            if address:
-                params["address"] = address
-            else:
-                params["zipcode"] = zipcode
-            r = await client.get(f"{BI_BASE}/analyze/by-zipcode", params=params)
-            if r.status_code != 200:
-                return {"error": r.text[:300]}
-            return r.json()
 
-    async def call_bi_explain() -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=90.0) as client:
-            payload: dict[str, Any] = {"objective": "balanced", "scoring_mode": "hybrid"}
-            if address:
-                payload["address"] = address
-            else:
-                payload["zipcode"] = zipcode
-            r = await client.post(f"{BI_BASE}/analyze/explain/by-zipcode", json=payload)
-            if r.status_code != 200:
-                return {"error": r.text[:300]}
-            return r.json()
+class PipelineRunV2Input(BaseModel):
+    image_urls: list[str]
+    zipcode: str | None = None
+    address: str | None = None
+    bedrooms: int | None = None
+    bathrooms: float | None = None
+    sqft: int | None = None
+    property_type: str = "residential"
+    listing_price: int | None = None
+    agent_name: str | None = None
+    agent_contact: str | None = None
+    room_groups: str | None = None
 
-    # Parallel: home report + BI analysis + BI AI explain
-    home_report, bi_analysis, bi_explain = await asyncio.gather(
-        call_home_report(), call_bi(), call_bi_explain()
+
+@app.post("/v2/pipeline/run")
+async def pipeline_run_v2(req: PipelineRunV2Input) -> dict[str, Any]:
+    """Same as /pipeline/run, but takes already-uploaded image URLs (via
+    /upload) instead of multipart file bytes.
+
+    /pipeline/run's multipart body carries every photo's raw bytes, which can
+    exceed the 6MB request-body limit of the AWS-Lambda-fronted production
+    proxy once a listing has more than a handful of full-resolution photos —
+    the request then times out before it reaches this service. This endpoint
+    keeps the client → backend request small (a JSON list of URLs) and
+    downloads the photo bytes itself.
+    """
+    if not req.image_urls:
+        raise HTTPException(status_code=400, detail="No images provided.")
+    if len(req.image_urls) > 60:
+        raise HTTPException(status_code=400, detail="Maximum 60 images.")
+    if not req.address and not (req.zipcode and len(req.zipcode) == 5 and req.zipcode.isdigit()):
+        raise HTTPException(status_code=400, detail="Provide either address or 5-digit zipcode.")
+
+    files_payload = []
+    async with httpx.AsyncClient(timeout=60.0) as dl_client:
+        for i, url in enumerate(req.image_urls):
+            r = await dl_client.get(url)
+            r.raise_for_status()
+            filename = url.split("/")[-1] or f"image_{i}.jpg"
+            files_payload.append(("files", (filename, r.content, "image/jpeg")))
+
+    return await _run_pipeline_core(files_payload, len(req.image_urls), req.zipcode, req.address, req.room_groups)
+
+
+def _extract_home_report_highlights(home_report: Any) -> str | None:
+    if not isinstance(home_report, dict):
+        return None
+    rooms = home_report.get("rooms")
+    if not isinstance(rooms, list):
+        return None
+
+    highlights = []
+    for room in rooms:
+        if not isinstance(room, dict):
+            continue
+        q = room.get("quality_decimal", 0)
+        if q < 4.0:
+            continue
+        room_type = room.get("room_type", "room")
+        q_rating = room.get("quality_rating", f"Q{int(q)}")
+        c_rating = room.get("condition_rating", "")
+        rationale = room.get("quality_rationale", "")
+        rating_str = f"{q_rating}/{c_rating}" if c_rating else q_rating
+        highlights.append(f"- {room_type} ({rating_str}): {rationale}")
+
+    if not highlights:
+        return None
+
+    return (
+        "Property highlights from professional room assessment "
+        "(use these specific details naturally in the listing — do not mention ratings or scores, "
+        "do not reference low-scoring rooms):\n"
+        + "\n".join(highlights)
     )
-
-    # Extract style data for listing composition
-    top_style_data = None
-    if isinstance(bi_analysis, dict) and bi_analysis.get("recommended_styles"):
-        top_style_data = bi_analysis["recommended_styles"][0]
-
-    # Compose listing via bi /listing/write (inherits all prompt improvements)
-    listing_text = await _compose_listing_via_bi(
-        files_payload=files_payload,
-        address=address,
-        zipcode=zipcode,
-        top_style_data=top_style_data,
-        bedrooms=bedrooms,
-        bathrooms=bathrooms,
-        sqft=sqft,
-        property_type=property_type,
-        listing_price=listing_price,
-        agent_name=agent_name,
-        agent_contact=agent_contact,
-    )
-
-    # Resolved zipcode from BI (if user supplied address, BI returns the geocoded zip)
-    resolved_zipcode = zipcode
-    if isinstance(bi_analysis, dict) and bi_analysis.get("zipcode"):
-        resolved_zipcode = bi_analysis["zipcode"]
-
-    return {
-        "zipcode": resolved_zipcode,
-        "address": address,
-        "n_photos": len(files),
-        "home_report": home_report,
-        "bi_analysis": bi_analysis,
-        "bi_explain": bi_explain,
-        "listing_text": listing_text,
-    }
 
 
 # ============================================================
 # Listing composer — delegates to bi /listing/write
 # ============================================================
 async def _compose_listing_via_bi(
-    files_payload: list,
     address: str | None,
     zipcode: str | None,
     top_style_data: dict | None,
@@ -273,49 +480,90 @@ async def _compose_listing_via_bi(
     listing_price: int | None = None,
     agent_name: str | None = None,
     agent_contact: str | None = None,
-) -> str:
-    """Route listing generation through the bi listing writer (port 8000).
-
-    Converts raw image bytes to base64 data URLs so the bi endpoint
-    can pass them to GPT-4o vision.
-    """
-    import base64
-
+    additional_requirements: str | None = None,
+    market_data: dict | None = None,
+    template: str = "word_optimized",
+    home_report: dict | None = None,
+) -> dict:
     style = (top_style_data.get("style") if top_style_data else None) or "Transitional"
     street_address = address or zipcode or ""
-
-    images = []
-    for _, (filename, content, content_type) in files_payload:
-        ct = content_type or "image/jpeg"
-        b64 = base64.b64encode(content).decode()
-        images.append(f"data:{ct};base64,{b64}")
-
     payload: dict = {
         "style": style,
         "street_address": street_address,
         "property_type": property_type,
-        "images": images,
+        "bedrooms": bedrooms,
+        "bathrooms": bathrooms,
+        "sqft": sqft,
+        "listing_price": listing_price,
+        "agent_name": agent_name,
+        "agent_contact": agent_contact,
+        "additional_requirements": additional_requirements,
+        "market_data": market_data,
+        "template": template,
+        "home_report": home_report,
     }
-    if address:
-        payload["address"] = address
-    elif zipcode:
-        payload["zipcode"] = zipcode
-    if bedrooms is not None:   payload["bedrooms"] = bedrooms
-    if bathrooms is not None:  payload["bathrooms"] = bathrooms
-    if sqft is not None:       payload["sqft"] = sqft
-    if listing_price is not None: payload["listing_price"] = listing_price
-    if agent_name:             payload["agent_name"] = agent_name
-    if agent_contact:          payload["agent_contact"] = agent_contact
-
     async with httpx.AsyncClient(timeout=120.0) as client:
         try:
             r = await client.post(f"{BI_BASE}/listing/write", json=payload)
             if r.status_code != 200:
-                return f"[listing_error: {r.text[:200]}]"
+                return {"_error": f"[listing_error: {r.text[:200]}]"}
             data = r.json()
-            return data.get("full_body") or "\n\n".join(data.get("paragraphs", []))
+            return data
         except Exception as e:
-            return f"[listing_exception: {str(e)[:200]}]"
+            return {"_error": f"[listing_exception: {str(e)[:200]}]"}
+
+
+# ============================================================
+# ON-DEMAND LISTING — generate for a chosen style
+# ============================================================
+class ListingRequest(BaseModel):
+    style: str
+    template: str = "word_optimized"
+    home_report: dict | None = None
+    address: str | None = None
+    zipcode: str | None = None
+    bedrooms: int | None = None
+    bathrooms: float | None = None
+    sqft: int | None = None
+    property_type: str = "residential"
+    listing_price: int | None = None
+    agent_name: str | None = None
+    agent_contact: str | None = None
+    market_data: dict | None = None
+
+
+@app.post("/generate-listing")
+async def generate_listing_for_style(req: ListingRequest) -> dict[str, Any]:
+    """Generate a listing description for one chosen style, on demand."""
+    if not req.style or not req.style.strip():
+        raise HTTPException(status_code=400, detail="style is required.")
+    highlights = _extract_home_report_highlights(req.home_report)
+    data = await _compose_listing_via_bi(
+        address=req.address,
+        zipcode=req.zipcode,
+        top_style_data={"style": req.style},
+        bedrooms=req.bedrooms,
+        bathrooms=req.bathrooms,
+        sqft=req.sqft,
+        property_type=req.property_type,
+        listing_price=req.listing_price,
+        agent_name=req.agent_name,
+        agent_contact=req.agent_contact,
+        additional_requirements=highlights,
+        market_data=req.market_data,
+        template=req.template,
+        home_report=req.home_report,
+    )
+    if data.get("_error"):
+        raise HTTPException(status_code=502, detail=data["_error"])
+    text = data.get("full_body") or "\n\n".join(data.get("paragraphs", []))
+    return {
+        "listing_text": text,
+        "style": req.style,
+        "template": data.get("template", req.template),
+        "why_summary": data.get("why_summary", ""),
+        "why_steps": data.get("why_steps", {}),
+    }
 
 
 if __name__ == "__main__":

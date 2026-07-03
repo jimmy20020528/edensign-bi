@@ -7,8 +7,13 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)  # must run before any src imports read os.environ
 
+import logging
+import time
+
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+
+_log = logging.getLogger("timing")
 
 from src.models.schemas import FinalReport
 from src.pipeline.stage1_perception import assess_images
@@ -54,8 +59,11 @@ async def generate_report(files: list[UploadFile] = File(...)) -> FinalReport:
                 dest.write_bytes(await upload.read())
                 tmp_paths.append(dest)
 
+            t0 = time.perf_counter()
             assessments = await assess_images(tmp_paths)
+            t1 = time.perf_counter()
             summaries = aggregate_rooms(assessments)
+            t2 = time.perf_counter()
 
             if not summaries:
                 raise HTTPException(
@@ -64,10 +72,19 @@ async def generate_report(files: list[UploadFile] = File(...)) -> FinalReport:
                 )
 
             actions = generate_suggestions(summaries)
+            t3 = time.perf_counter()
             ranked = prioritize(actions)
+            t4 = time.perf_counter()
             overall_q, overall_c = compute_property_scores(summaries)
             note = coverage_note(summaries)
             report = await build_report(len(files), summaries, ranked, overall_q, overall_c, note)
+            t5 = time.perf_counter()
+
+            _log.warning(
+                "TIMING n=%d | stage1_vlm=%.1fs | stage2_agg=%.2fs | "
+                "stage3_rules=%.2fs | stage4_rank=%.2fs | stage5_polish=%.1fs | total=%.1fs",
+                len(files), t1-t0, t2-t1, t3-t2, t4-t3, t5-t4, t5-t0,
+            )
 
     except HTTPException:
         raise

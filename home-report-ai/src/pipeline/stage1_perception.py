@@ -41,7 +41,10 @@ async def assess_image(image_path: Path) -> RoomAssessment:
     )
 
 
-_SEM = asyncio.Semaphore(2)
+_SEM = asyncio.Semaphore(8)
+# Above this many images, skip the single-call batch (it hangs/chokes on many
+# images) and assess concurrently per-image instead.
+_BATCH_MAX = 8
 
 
 async def _assess_with_sem(path: Path) -> RoomAssessment:
@@ -50,20 +53,25 @@ async def _assess_with_sem(path: Path) -> RoomAssessment:
 
 
 async def assess_images(image_paths: list[Path]) -> list[RoomAssessment]:
-    """Assess all images in a single batch VLM call. Falls back to per-image on failure."""
+    """Assess images. Small sets use one batch VLM call; larger sets (or on batch
+    failure) fall back to concurrent per-image assessment."""
     if not image_paths:
         return []
     if len(image_paths) == 1:
         return [await assess_image(image_paths[0])]
 
-    image_ids = [p.stem for p in image_paths]
-    try:
-        raw = await call_vlm_batch(image_paths, batch_assessment_prompt(image_ids))
-        results = parse_and_validate_batch(raw, image_ids)
-        if results and all(r is not None for r in results):
-            return results
-        logger.warning("Batch VLM returned incomplete results, falling back to per-image")
-    except Exception as exc:
-        logger.warning("Batch VLM failed (%s), falling back to per-image", exc)
+    # The single-call batch (all images in one VLM request) is fast for a few
+    # images but hangs/chokes on many. Only try it for small sets; larger sets go
+    # straight to concurrent per-image assessment (bounded by _SEM).
+    if len(image_paths) <= _BATCH_MAX:
+        image_ids = [p.stem for p in image_paths]
+        try:
+            raw = await call_vlm_batch(image_paths, batch_assessment_prompt(image_ids))
+            results = parse_and_validate_batch(raw, image_ids)
+            if results and all(r is not None for r in results):
+                return results
+            logger.warning("Batch VLM returned incomplete results, falling back to per-image")
+        except Exception as exc:
+            logger.warning("Batch VLM failed (%s), falling back to per-image", exc)
 
     return list(await asyncio.gather(*[_assess_with_sem(p) for p in image_paths]))

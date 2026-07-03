@@ -1,0 +1,38 @@
+Subset: empty
+CV accuracy: 0.711 ± 0.015
+Test accuracy: 0.681
+
+                precision    recall  f1-score   support
+
+      bathroom       1.00      1.00      1.00        37
+       kitchen       0.87      0.97      0.92        34
+       bedroom       0.64      0.68      0.66        44
+        living       0.68      0.45      0.54        38
+        dining       0.89      0.50      0.64        34
+       hallway       0.50      1.00      0.67         8
+   home_office       0.79      0.50      0.61        38
+       balcony       0.35      1.00      0.52         7
+       outdoor       0.91      0.73      0.81        44
+       theatre       0.40      0.60      0.48        10
+      kidsroom       0.23      0.67      0.34         9
+living_bedroom       0.33      0.43      0.38         7
+ living_dining       0.59      0.57      0.58        35
+
+      accuracy                           0.68       345
+     macro avg       0.63      0.70      0.63       345
+  weighted avg       0.74      0.68      0.69       345
+
+Confusion matrix (rows=true, cols=pred):
+[[37  0  0  0  0  0  0  0  0  0  0  0  0]
+ [ 0 33  0  0  0  0  1  0  0  0  0  0  0]
+ [ 0  0 30  4  0  1  0  0  0  1  7  1  0]
+ [ 0  0  5 17  0  1  0  0  1  2  2  0 10]
+ [ 0  3  4  2 17  0  3  0  2  0  1  0  2]
+ [ 0  0  0  0  0  8  0  0  0  0  0  0  0]
+ [ 0  0  5  1  1  3 19  1  0  2  5  0  1]
+ [ 0  0  0  0  0  0  0  7  0  0  0  0  0]
+ [ 0  0  0  0  0  0  0 12 32  0  0  0  0]
+ [ 0  0  0  0  0  2  0  0  0  6  2  0  0]
+ [ 0  0  0  0  0  0  0  0  0  2  6  1  0]
+ [ 0  1  1  0  0  0  0  0  0  0  1  3  1]
+ [ 0  1  2  1  1  1  1  0  0  2  2  4 20]]

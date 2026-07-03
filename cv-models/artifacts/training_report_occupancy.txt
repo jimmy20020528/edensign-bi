@@ -1,0 +1,16 @@
+Subset: occupancy
+CV accuracy: 0.958 ± 0.004
+Test accuracy: 0.954
+
+              precision    recall  f1-score   support
+
+       empty       0.96      0.95      0.95       345
+   furnished       0.95      0.96      0.95       345
+
+    accuracy                           0.95       690
+   macro avg       0.95      0.95      0.95       690
+weighted avg       0.95      0.95      0.95       690
+
+Confusion matrix (rows=true, cols=pred):
+[[328  17]
+ [ 15 330]]

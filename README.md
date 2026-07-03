@@ -1,159 +1,325 @@
-# Edensign
+# Edensign BI — Style Atlas
 
-Pre-market real estate platform: photos + property location → market analysis, per-room condition report, recommended staging style, and a draft listing description.
+ZIP-level real estate staging style recommendation engine — and the data engine
+behind the **Listing Wizard**, which turns property photos + an address into a full
+pre-listing package (condition 1–10, comparable sales, neighborhood, recommended
+staging style, photo walk-through order, and a grounded listing description).
 
-The user-facing entry point is the **Listing Wizard** at `bi/frontend/wizard.html`.
+---
+
+## Quick start (one command)
+
+```bash
+git clone https://github.com/jimmy20020528/edensign-bi.git && cd edensign-bi
+cp .env.example .env          # then fill in your API keys (at least OPENAI_API_KEY)
+./run.sh                      # = setup (4 venvs + deps) + start everything, health-checked
+```
+
+Then open the **Listing Wizard**: <http://localhost:8000/ui/wizard.html>
+
+`./run.sh` with no argument runs `setup` then `start`. Also:
+`./run.sh {setup|start|stop|restart|status}`. It auto-handles the gotchas — picks a
+Python ≥3.10, installs CPU torch on GPU-less hosts, includes all deps — so a fresh
+clone just runs. Ports overridable, e.g. `HR_PORT=8011 ./run.sh start`.
+
+## Deploy the backend (RunPod / a server)
+
+To run just the **API backend** (bi gateway on :80 + agent + home-report) for an
+external frontend — alongside a separate classification service:
+
+```bash
+git clone -b deploy/backend-runpod <repo> && cd edensign-bi
+cp .env.example .env          # fill in the keys
+./deploy.sh                   # gateway on :80   (or: WALKTHROUGH=1 ./deploy.sh)
+```
+
+One command, no flags — see **[`DEPLOY.md`](./DEPLOY.md)** for the full guide,
+**[`API.md`](./API.md)** / **[`FRONTEND.md`](./FRONTEND.md)** for how a frontend calls it.
+
+> **2026-07-02:** Added `POST /v2/pipeline/run` (JSON `{image_urls: [...]}`) alongside
+> the existing multipart `/pipeline/run`. The multipart body scales with total photo
+> size and can exceed the production proxy's 6MB request limit once a listing has more
+> than a few full-resolution photos, causing a timeout — use `/v2/pipeline/run` (upload
+> photos via `/upload` first, then send the URLs) for real listings. See `API.md`.
+
+**Local operator + production guide (nginx single-origin, systemd):
+[`QUICKSTART.md`](./QUICKSTART.md).**
+
+> The sections below describe the BI/Style-Atlas data + ML pipeline (rebuilding the
+> models from MLS data) — that's only needed to retrain, not to run the app.
+
+---
+
+## What It Does
+
+1. **Ingests** sold MLS listings (Redfin / Realtor.com scrape) with VLM-classified staging styles
+2. **Trains** regularized regression models (Ridge / Lasso with LOO-CV) to isolate the causal effect of staging style on `log(price_per_sqft)` and `log(days_on_market)`
+3. **Serves** a REST API that returns ranked style recommendations with confidence scores, model-predicted prices, and booster/detractor breakdowns
+4. **Explains** results via GPT-4o-mini in plain English for homeowners and staging teams
 
 ---
 
 ## Architecture
 
 ```
-Browser (bi/frontend/wizard.html on port 5173)
-    │
-    │  POST multipart/form-data: photos + zipcode_or_address
-    ▼
-agent (port 8002)  ──┬──►  bi (port 8000)        market analysis + listing copy
-                    └──►  home-report-ai (8001)  VLM home assessment
-
-cv-models           standalone module — trained classifiers, not yet wired
-                    into the pipeline. Future RoMa serving on RunPod.
+MLS Data (Redfin / Realtor.com)
+        ↓
+  PostgreSQL + PostGIS          ← listing_full, listings tables
+        ↓
+  scripts/build_training_dataset.py   ← feature engineering + quality filters
+        ↓
+  data/derived/training_*.parquet
+        ↓
+  scripts/train_baseline_models.py    ← Ridge / Lasso / OLS + LOO-CV
+        ↓
+  models/baseline/log_psf_ridge_*/
+  models/baseline/log_dom_ridge_*/
+        ↓
+  FastAPI (app/main.py)               ← /analyze/by-zipcode
+        ↓
+  React Frontend (/ui/)               ← Style Atlas Dashboard
 ```
-
-### Services
-
-| Service          | Port | Status        | What it does                                                      |
-|------------------|------|---------------|-------------------------------------------------------------------|
-| `bi`             | 8000 | Production    | ZIP-level market analysis, listing description writer             |
-| `home-report-ai` | 8001 | Production    | 30-photo property → Q/C ratings + per-room rationale + suggestions|
-| `agent`          | 8002 | Production    | Orchestrator — wraps bi + home-report-ai for the wizard           |
-| `cv-models`      | —    | Standalone    | DINOv2 room classifiers (trained). Not yet integrated.            |
-
-The wizard pipeline (`agent /pipeline/run`) is end-to-end working with bi + home-report-ai. cv-models is in the repo but not called by the pipeline yet.
 
 ---
 
-## Quick start (local Linux/Mac)
+## Tech Stack
 
-### 1. Clone and set up environments
+| Layer | Technology |
+|---|---|
+| API framework | FastAPI + uvicorn |
+| Database | PostgreSQL 16 + PostGIS 3.4 |
+| ML models | scikit-learn (Ridge, Lasso, OLS) |
+| Data processing | pandas, numpy, pyarrow |
+| Model serialization | joblib |
+| VLM style classification | Gemini 2.5 Pro (→ migrating to Qwen3.6-35B-A3B) |
+| LLM explanation | OpenAI GPT-4o-mini |
+| Frontend | React 18 (CDN, no build step) + Babel standalone |
+| Local DB | Docker + postgis/postgis:16-3.4 |
 
-Each service has its own Python virtualenv and `requirements.txt`. Postgres is needed for `bi`.
+---
+
+## Quick Start
+
+### 1. Prerequisites
+
+- Python 3.12
+- Docker Desktop
+- `git clone` this repo
+
+### 2. Environment
 
 ```bash
-git clone <this-repo>
-cd edensign-repo
+cp .env.example .env
+# Fill in your API keys in .env
+```
 
-# Postgres for bi
-cd bi
+### 3. Start the database
+
+```bash
 docker compose up -d
-cd ..
-
-# bi
-cd bi
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env   # fill in API keys
-deactivate
-cd ..
-
-# home-report-ai
-cd home-report-ai
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-deactivate
-cd ..
-
-# agent
-cd agent
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-deactivate
-cd ..
+# Starts PostgreSQL on localhost:5432
+# Automatically applies schema.sql on first run
 ```
 
-### 2. Download large data (optional)
-
-`bi` auto-downloads all external data on first use (Redfin TSV, HMDA county CSVs, NCES state school data, Walkscore, Geocode). You can pre-warm the Redfin file to avoid a ~30s delay on the first request:
+### 4. Install dependencies
 
 ```bash
-./scripts/download_data.sh
+python -m venv .venv
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-All other data downloads on-demand per ZIP/county/state and caches under `bi/data/`.
-
-### 3. Apply database schema
+### 5. Populate data
 
 ```bash
-docker exec -i edensign_bi_db psql -U edensign -d edensign_bi < bi/schema.sql
+# Pull sold listings (Redfin / Realtor)
+python scripts/redfin_scrape.py
+python scripts/realtor_pull.py
+
+# Fetch walk scores and location features
+python scripts/fetch_location_scores.py --min-sold-date 2025-05-01
+
+# Classify staging styles with VLM
+python scripts/classify_styles.py
 ```
 
-### 4. Start services
+### 6. Train models
 
 ```bash
-cd bi && source .venv/bin/activate && uvicorn app.main:app --port 8000 &
-cd home-report-ai && source .venv/bin/activate && uvicorn src.api.main:app --port 8001 &
-cd agent && source .venv/bin/activate && set -a && source ../bi/.env && set +a && python tools/server.py &
-cd bi/frontend && python3 -m http.server 5173 &
+# Build training parquet (with quality filters)
+python scripts/build_training_dataset.py --min-sold-date 2025-05-01
+
+# Train Ridge / Lasso / OLS with LOO-CV
+python scripts/train_baseline_models.py
 ```
 
-Health: `curl localhost:{8000,8001,8002}/health`
-Wizard: `http://localhost:5173/wizard.html`
+### 7. Start the API
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+Open `http://localhost:8000/ui/` in your browser.
 
 ---
 
-## Wizard pipeline contract
+## API Endpoints
 
-Frontend POSTs to `agent /pipeline/run`. Agent calls bi + home-report-ai in parallel, composes listing copy via `bi /listing/write`, returns unified JSON:
+### `GET /analyze/by-zipcode`
+
+Returns ranked staging style recommendations for a ZIP code.
+
+```
+GET /analyze/by-zipcode?zipcode=02135&objective=balanced&scoring_mode=hybrid
+```
+
+**Parameters:**
+
+| Name | Values | Default | Description |
+|---|---|---|---|
+| `zipcode` | 5-digit US ZIP | required | Target market |
+| `objective` | `balanced` `fast` `price` | `balanced` | Optimization goal |
+| `scoring_mode` | `heuristic` `model` `hybrid` | `heuristic` | Scoring method |
+
+**Scoring modes:**
+- `heuristic` — weighted median DOM + price from historical data
+- `model` — Ridge/Lasso predicted log(psf) and log(dom)
+- `hybrid` — blend of both (recommended)
+
+### `POST /analyze/explain/by-zipcode`
+
+Same analysis + GPT-4o-mini narrative explanation.
 
 ```json
 {
-  "zipcode": "02134",
-  "address": "20 Allston St, Boston, MA",
-  "n_photos": 8,
-  "home_report": { ... },
-  "bi_analysis": { ... },
-  "bi_explain": { ... },
-  "listing_text": "..."
+  "zipcode": "02135",
+  "objective": "balanced",
+  "scoring_mode": "hybrid",
+  "client_context": { "language": "English", "audience": "homeowner_or_staging_team" }
 }
 ```
 
-Changing this shape requires a frontend update in the same commit.
+### `GET /health`
+
+```json
+{ "status": "ok" }
+```
+
+Full interactive docs at `http://localhost:8000/docs`.
 
 ---
 
-## cv-models (standalone)
+## Training Pipeline
 
-Trained DINOv2 + linear probe classifiers:
-- **Occupancy**: empty vs furnished (~95%)
-- **Furnished room type**: 13 classes (~83%)
-- **Empty room type**: 13 classes (~68%)
+### Model targets
 
-Trained `.pkl` files are NOT in the repo. Regenerate via `cv-models/README.md`.
+| Target | Description | Current LOO-CV MAPE |
+|---|---|---|
+| `log_psf` | log(price per sqft) | ~24% |
+| `log_dom` | log(days on market) | ~57% |
 
-### serve_roma/ (RunPod GPU target, not yet built)
+### Features
 
-Future RoMa indoor matcher for room instance grouping. Placeholder folder, see `cv-models/serve_roma/README.md`.
+**Continuous** (StandardScaler normalized):
+
+| Feature | Description |
+|---|---|
+| `sqft` | Property size |
+| `bedrooms` | Bedroom count |
+| `bathrooms` | Bathroom count |
+| `year_built` | Construction year |
+| `walk_score_resid` | Walk score minus archetype mean (within-group deviation) |
+| `median_income` | ZIP median household income |
+| `months_since_2022_q1` | Linear time trend |
+| `months_since_2022_q1_sq` | Quadratic time trend |
+
+**Categorical** (one-hot encoded):
+- `dominant_archetype` — buyer demographic archetype (young_professional, student_budget, mixed)
+- `style_g` — staging style, reference = `Baseline_EmptyRoom`
+
+### Quality filters
+
+Rows excluded from training:
+- `sqft > 3500` — multifamily rental buildings
+- `bedrooms > 8` — multifamily buildings
+- `price_per_sqft < $250` — impossible for Boston residential
+
+### Best model selection
+
+LOO-CV RMSE selects the best among OLS / Ridge / Lasso per target. Currently Lasso wins for both targets (sparse feature selection).
 
 ---
 
-## Cross-service rules
+## Project Structure
 
-See `CLAUDE.md` for the full DO NOT BREAK list. Quick summary:
+```
+bi/
+├── app/
+│   ├── main.py                    # FastAPI app, routes, static files
+│   └── services/
+│       ├── zipcode_analyzer.py    # Core recommendation engine
+│       └── gpt_explainer.py       # OpenAI narrative generation
+├── scripts/
+│   ├── build_training_dataset.py  # Task 1: feature engineering → parquet
+│   ├── train_baseline_models.py   # Task 2: Ridge/Lasso/OLS + LOO-CV
+│   ├── fetch_location_scores.py   # Walk Score + transit score fetch
+│   ├── classify_styles.py         # VLM style classification (Gemini)
+│   ├── redfin_scrape.py           # Redfin sold listings scraper
+│   ├── realtor_pull.py            # Realtor.com listings via homeharvest
+│   ├── census_pull.py             # US Census ACS income data
+│   ├── migrations/                # SQL schema migrations
+│   └── db_dsn.py                  # PostgreSQL connection helper
+├── frontend/
+│   └── index.html                 # Style Atlas Dashboard (self-contained React app)
+├── config/
+│   ├── style_taxonomy.json        # 20 staging style definitions
+│   └── acs_variables.json         # Census variable codes
+├── schema.sql                     # Database schema
+├── docker-compose.yml             # Local PostgreSQL + PostGIS
+├── requirements.txt
+└── .env.example                   # Environment variable template
+```
 
-1. Ports are contractual (8000/8001/8002/5173).
-2. `bi/.env` is the source of truth for shared API keys.
-3. `/pipeline/run` response schema is consumed by the wizard frontend.
-4. `bi/frontend/wizard.html` is built from `index.html` via `build_wizard.py`.
-5. VLM cost is real — don't add new VLM calls casually.
-6. Never commit `.env`.
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Required | Description |
+|---|---|---|
+| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Yes | PostgreSQL connection |
+| `OPENAI_API_KEY` | Yes | GPT-4o-mini for explanations |
+| `GEMINI_API_KEY` | Yes | VLM style classification |
+| `WALKSCORE_API_KEY` | Yes | Walk Score API |
+| `RENTCAST_API_KEY` | No | Rental market data |
+| `FRED_API_KEY` | No | Federal Reserve economic data |
+| `CENSUS_API_KEY` | No | US Census ACS (works without key at lower rate limit) |
+| `RUNPOD_API_KEY` | No | For self-hosted VLM inference |
+
+---
+
+## Roadmap
+
+- [ ] Expand beyond Allston (02135) to multi-city dataset
+- [ ] Switch VLM from Gemini to Qwen3.6-35B-A3B FP8 (self-hosted on RunPod)
+- [ ] Add S3 photo storage for reproducible VLM re-classification
+- [ ] Migrate PostgreSQL from localhost to AWS RDS
+- [ ] Add school ratings, crime index, MBTA proximity as features
+- [ ] XGBoost + SHAP when dataset reaches ~5,000 listings
+- [ ] Accept listing-level inputs (sqft, bedrooms) instead of ZIP median
+
+---
+
+## Data Notes
+
+- Training data covers **sold listings only** (not active)
+- Style labels are assigned by VLM (Gemini 2.5 Pro) from listing photos
+- `EmptyRoom` style serves as the regression baseline — all other style coefficients represent premium/discount relative to an empty/unstaged property
+- DOM model has high error (~57% MAPE) due to confounding from listing price strategy; use with caution
 
 ---
 
 ## License
 
-Proprietary. Edensign internal.
+Internal — Edensign © 2026

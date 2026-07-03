@@ -106,7 +106,7 @@ def main():
         with torch.no_grad():
             out = model(**inputs)
             cls = out.last_hidden_state[:, 0]
-            cls = cls / cls.norm(dim=1, keepdim=True)
+            cls = cls / cls.norm(dim=1, keepdim=True).clamp(min=1e-6)
             cls = cls.cpu().numpy()
 
         for i, (_, ci) in enumerate(batch):

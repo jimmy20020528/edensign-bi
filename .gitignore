@@ -1,51 +1,41 @@
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
 *.egg-info/
-.pytest_cache/
-
-# Virtualenvs
 .venv/
 venv/
-env/
 
-# Secrets — NEVER commit
+# Environment
 .env
-*.env.local
-.env.production
-
-# macOS
-.DS_Store
-._*
 
 # IDE
 .vscode/
 .idea/
 *.swp
 
-# Logs
-*.log
+# Data (不要把抓的数据传到git)
+data/
+*.csv
+*.parquet
 
-# Large data files (regenerate via scripts or ingestion)
-bi/data/redfin_zip_market.tsv.gz
-bi/data/hmda_*.csv
-bi/data/nces_state_*.json
-bi/data/walkscore_*.json
-bi/data/geocode_*.json
-cv-models/data/
-cv-models/classifier_dataset/
-cv-models/artifacts/
+# 训练好的模型文件 (大型二进制，不进 git)
+models/
+*.joblib
+cv-models/artifacts/*.npz
 
-# wandb runs
-wandb/
+# Docker
+pgdata/
 
-# Node
-node_modules/
-
-# Jupyter
-.ipynb_checkpoints/
-
-# OS junk
+# OS
+.DS_Store
 Thumbs.db
+*.png
+*.jpg
+*.jpeg
+
+# session caches / logs / large reference
+.cache/
+.run-logs/
+.ipynb_checkpoints/
+demo_report.pdf
+AI Listing Intelligence.html
