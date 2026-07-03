@@ -423,11 +423,20 @@ async def pipeline_run_v2(req: PipelineRunV2Input) -> dict[str, Any]:
     if not req.address and not (req.zipcode and len(req.zipcode) == 5 and req.zipcode.isdigit()):
         raise HTTPException(status_code=400, detail="Provide either address or 5-digit zipcode.")
 
+    # follow_redirects: uploaded image URLs (S3 presigned → CDN, etc.) commonly
+    # 302-redirect; without this httpx returns the empty redirect body and
+    # raise_for_status treats the 3xx as an error.
     files_payload = []
-    async with httpx.AsyncClient(timeout=60.0) as dl_client:
+    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as dl_client:
         for i, url in enumerate(req.image_urls):
-            r = await dl_client.get(url)
-            r.raise_for_status()
+            try:
+                r = await dl_client.get(url)
+                r.raise_for_status()
+            except httpx.HTTPError as e:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"Could not fetch image {url}: {type(e).__name__}",
+                )
             filename = url.split("/")[-1] or f"image_{i}.jpg"
             files_payload.append(("files", (filename, r.content, "image/jpeg")))
 
