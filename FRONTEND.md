@@ -155,18 +155,29 @@ const w = await (await fetch(`${API}/walkthrough`, { method:"POST", body: fd }))
 // w.order [photoIndex...], w.segments [{ room_type, photo_indices }]
 ```
 
-## 11. One-shot (optional)  `POST ${API}/pipeline/run`  *(multipart)*
+## 11. One-shot (optional)  `POST ${API}/v2/pipeline/run`  *(JSON)*
 
 Bundles home report + market + neighborhood (+ walk-through if `room_groups` sent) in
 one call — instead of #3/#5/#8 individually.
 
+**Prefer the JSON `/v2/pipeline/run`** (below): upload each photo via `/upload` first,
+then send the URLs. The old multipart `/pipeline/run` puts every photo's raw bytes in
+one request body, which exceeds the production proxy's 6MB limit once a listing has
+more than a handful of full-res photos (times out). v2 keeps the request tiny and the
+backend downloads the photos itself. Same response shape.
+
 ```js
-const fd = new FormData();
-files.forEach(f => fd.append("files", f));
-fd.append("address", address); fd.append("bedrooms","3"); fd.append("sqft","1500");
-const p = await (await fetch(`${API}/pipeline/run`, { method:"POST", body: fd })).json();
+// image_urls come from #12's /upload (or your own upload) — not raw File objects.
+const body = { image_urls: photoUrls, address, bedrooms: 3, sqft: 1500 };
+if (roomGroups) body.room_groups = JSON.stringify(roomGroups);  // optional, enables walk-through
+const p = await (await fetch(`${API}/v2/pipeline/run`, {
+  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+})).json();
 // p.home_report, p.bi_analysis, p.bi_explain, p.walkthrough, p.zipcode, p.n_photos
 ```
+
+The legacy multipart form is still available at `POST ${API}/pipeline/run` (same fields
+as a FormData with `files`), but avoid it for real listings for the size reason above.
 
 ## 12. Persistence — save the submission to the DB
 
