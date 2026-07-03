@@ -2,7 +2,8 @@
 
 The Listing Wizard front-end calls a few endpoints that physically live on the
 agent/tool service (port 8002): /classify-rooms, /generate-listing,
-/pipeline/run. In the RunPod demo only port 8000 (this BI service) is exposed
+/pipeline/run, /v2/pipeline/run. In the RunPod demo only port 8000 (this BI
+service) is exposed
 through the public proxy, so we forward those calls to the local agent service
 over localhost. This keeps the whole wizard reachable through a single port.
 """
@@ -66,6 +67,11 @@ async def proxy_generate_listing(request: Request) -> Response:
 @router.post("/pipeline/run")
 async def proxy_pipeline_run(request: Request) -> Response:
     return await _proxy(request, "/pipeline/run")
+
+
+@router.post("/v2/pipeline/run")
+async def proxy_pipeline_run_v2(request: Request) -> Response:
+    return await _proxy(request, "/v2/pipeline/run")
 
 
 @router.post("/walkthrough")
