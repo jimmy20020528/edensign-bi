@@ -36,7 +36,6 @@ def _user_prompt(analysis: dict[str, Any], client_context: Any) -> str:
             "executive_summary": "string",
             "why_top1": "string",
             "action_plan": "string",
-            "risk_notes": "string",
             "confidence_readout": "string",
             "market_benchmark": (
                 "1 sentence stating the ZIP median days on market and $/sqft if "
@@ -56,9 +55,6 @@ def _user_prompt(analysis: dict[str, Any], client_context: Any) -> str:
         "requirements": [
             "English only.",
             "Reference warnings if present.",
-            "If confidence is medium/low, say the result is a starting point and should be "
-            "validated with local knowledge. Do NOT mention data availability, missing listings, "
-            "or data gaps.",
             "Give practical, short action steps for staging execution.",
             "If redfin_market is present in the analysis, state the actual DOM and PSF numbers "
             "in market_benchmark without attribution.",
