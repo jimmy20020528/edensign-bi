@@ -33,7 +33,9 @@ _HEADERS = {"apikey": _KEY, "Authorization": f"Bearer {_KEY}", "Content-Type": "
 
 
 class SubmissionIn(BaseModel):
-    address: str | None = None
+    address: str | None = None  # street line only ("484 Second St")
+    city: str | None = None
+    state: str | None = None
     zipcode: str | None = None
     bedrooms: int | None = None
     bathrooms: float | None = None
@@ -128,7 +130,8 @@ SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")
 
 _TABLE_COLUMNS: dict[str, list[tuple[str, str]]] = {
     "wizard_submissions": [
-        ("address", "text"), ("zipcode", "text"), ("bedrooms", "int"),
+        ("address", "text"), ("city", "text"), ("state", "text"),
+        ("zipcode", "text"), ("bedrooms", "int"),
         ("bathrooms", "numeric"), ("sqft", "int"), ("year_built", "int"),
         ("property_type", "text"), ("listing_price", "bigint"),
         ("agent_name", "text"), ("agent_contact", "text"), ("n_photos", "int"),

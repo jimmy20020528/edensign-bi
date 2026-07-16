@@ -906,6 +906,8 @@ async function saveSubmission(base, inputs, data) {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         address: inputs.address || null,
+        city: inputs.city || null,
+        state: inputs.state || null,
         zipcode: data.zipcode || null,
         bedrooms: inputs.bedrooms !== "" ? parseInt(inputs.bedrooms) : null,
         bathrooms: inputs.bathrooms !== "" ? parseFloat(inputs.bathrooms) : null,
@@ -1412,7 +1414,7 @@ function BuyerAppealSection({homeReport, market, specs, biBase, submissionId}) {
   );
 }
 
-function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcode, onRun, running,
+function PhotoUpload({files, setFiles, location, setLocation, city, setCity, state, setState, zipcode, setZipcode, onRun, running,
                       classificationResult, classificationLoading, onClassify, onReview,
                       bedrooms, setBedrooms, bathrooms, setBathrooms, sqft, setSqft, yearBuilt, setYearBuilt,
                       propertyType, setPropertyType, listingPrice, setListingPrice,
@@ -1499,15 +1501,35 @@ function PhotoUpload({files, setFiles, location, setLocation, zipcode, setZipcod
       )}
       {!readOnly && (
         <div className="wizard-form-row" style={{gridTemplateColumns:"1fr auto"}}>
-          <div style={{display:"flex",gap:8}}>
-            <div className="field" style={{flex:1}}>
-              <label>Address <span style={{color:"var(--orange)"}}>*</span></label>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <div className="field" style={{flex:"2 1 180px"}}>
+              <label>Street Address <span style={{color:"var(--orange)"}}>*</span></label>
               <input
                 className="input"
                 type="text"
-                placeholder="484 Second St, Cambridge MA"
+                placeholder="484 Second St"
                 value={location}
                 onChange={(e)=>setLocation(e.target.value)}
+              />
+            </div>
+            <div className="field" style={{flex:"1 1 120px"}}>
+              <label>City</label>
+              <input
+                className="input"
+                type="text"
+                placeholder="Cambridge"
+                value={city||""}
+                onChange={(e)=>setCity(e.target.value)}
+              />
+            </div>
+            <div className="field" style={{width:70}}>
+              <label>State</label>
+              <input
+                className="input"
+                type="text"
+                placeholder="MA"
+                value={state||""}
+                onChange={(e)=>setState(e.target.value)}
               />
             </div>
             <div className="field" style={{width:90}}>
@@ -2354,8 +2376,14 @@ function App() {
   const [biBase]  = useState(resolveApiBase);
   const [page, setPage] = useState("wizard");
   const [files, setFiles] = useState([]);
-  const [location, setLocation] = useState("");        // property address
+  const [location, setLocation] = useState("");        // property street address only
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
   const [zipcode, setZipcode] = useState("");
+  // Full address string (street, city, state) — what geocoding/pipeline/analysis
+  // consume. The three parts are stored separately in the backend; everything
+  // downstream still takes the one combined string, so nothing else changes.
+  const composeAddress = () => [location.trim(), city.trim(), state.trim()].filter(Boolean).join(", ");
   const [bedrooms, setBedrooms] = useState("");
   const [bathrooms, setBathrooms] = useState("");
   const [sqft, setSqft] = useState("");
@@ -2434,8 +2462,8 @@ function App() {
         throw new Error("Some photos failed to upload — please try again.");
       }
 
-      const locTrim = location.trim();
-      const body = {image_urls: photoUrls, address: locTrim, property_type: propertyType};
+      const fullAddr = composeAddress();
+      const body = {image_urls: photoUrls, address: fullAddr, property_type: propertyType};
       const zipTrim = zipcode.trim();
       if (zipTrim.length === 5 && /^\d{5}$/.test(zipTrim)) body.zipcode = zipTrim;
       if (bedrooms !== "") body.bedrooms = parseInt(bedrooms, 10);
@@ -2468,7 +2496,7 @@ function App() {
       // photoUrls are already known (uploaded above), so no second upload pass.
       saveSubmission(
         apiBase,
-        {address:locTrim, zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, yearBuilt, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
+        {address:location.trim(), city:city.trim(), state:state.trim(), zipcode:zipcode.trim()||null, bedrooms, bathrooms, sqft, yearBuilt, propertyType, listingPrice, agentName, agentContact, classificationResult, photoUrls},
         data
       ).then(id => { if (id) setSubmissionId(id); });
       // Use Style Atlas's mapAnalysis to produce the same display shape.
@@ -2502,7 +2530,7 @@ function App() {
         template: listingTemplate,
         home_report: result?.home_report || null,
         market_data: result?.bi_analysis || null,
-        address: location.trim() || null,
+        address: composeAddress() || null,
         zipcode: result?.zipcode || null,
         bedrooms: bedrooms !== "" ? parseInt(bedrooms) : null,
         bathrooms: bathrooms !== "" ? parseFloat(bathrooms) : null,
@@ -2607,7 +2635,7 @@ function App() {
 
           <PhotoUpload
             files={files} setFiles={setFiles}
-            location={location} setLocation={setLocation} zipcode={zipcode} setZipcode={setZipcode}
+            location={location} setLocation={setLocation} city={city} setCity={setCity} state={state} setState={setState} zipcode={zipcode} setZipcode={setZipcode}
             onRun={runPipeline} running={running}
             classificationResult={classificationResult}
             classificationLoading={classificationLoading}
@@ -2714,9 +2742,9 @@ function App() {
                 redfinMarket={mapped.redfinMarket}
               />
 
-              <NeighborhoodSection address={result?.address || location} biBase={biBase} marketContext={null} submissionId={submissionId}/>
+              <NeighborhoodSection address={result?.address || composeAddress()} biBase={biBase} marketContext={null} submissionId={submissionId}/>
 
-              <CompsSection zipcode={result?.zipcode || zipcode} address={result?.address || location} propertyType={propertyType} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} yearBuilt={yearBuilt} listingPrice={listingPrice} biBase={biBase} submissionId={submissionId}/>
+              <CompsSection zipcode={result?.zipcode || zipcode} address={result?.address || composeAddress()} propertyType={propertyType} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} yearBuilt={yearBuilt} listingPrice={listingPrice} biBase={biBase} submissionId={submissionId}/>
 
               <BuyerAppealSection homeReport={result?.home_report} market={result?.bi_analysis} biBase={biBase} submissionId={submissionId}
                 specs={{beds:bedrooms||null, baths:bathrooms||null, sqft:sqft||null, year_built:yearBuilt||null, listing_price:listingPrice||null}}/>

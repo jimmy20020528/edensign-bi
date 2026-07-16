@@ -39,3 +39,9 @@ Thumbs.db
 .ipynb_checkpoints/
 demo_report.pdf
 AI Listing Intelligence.html
+
+# Extra safety: env backups, stray logs, deploy markers
+.env.*
+!.env.example
+.run-logs-*.log
+.walkthrough.on
