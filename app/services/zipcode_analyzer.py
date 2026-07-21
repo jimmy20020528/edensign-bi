@@ -501,7 +501,7 @@ async def _enrich_model_or_hybrid(
 
     total_n = base["confidence"]["n_listings"]
     overall_score = float(base["confidence"]["overall_score"])
-    overall_label, zip_warns = _overall_confidence_meta(overall_score, total_n)
+    _, zip_warns = _overall_confidence_meta(overall_score, total_n)
 
     top_styles = [it["style"] for it in items[:3]]
     recency = await _fetch_style_support_recency(conn, zipcode, top_styles)
@@ -527,14 +527,11 @@ async def _enrich_model_or_hybrid(
     warnings.append(WARN_DATA_QUALITY_LIMITED)
 
     out = dict(base)
+    out.pop("confidence", None)  # confidence rate removed from API response
     out["scoring_mode"] = scoring_mode
     out["warnings"] = warnings
     out["recommended_styles"] = recommended
     out["all_styles"] = items
-    out["confidence"] = {
-        **base["confidence"],
-        "overall": overall_label,
-    }
     out["model_meta"] = {
         "log_psf_artifact": str(_latest_model_dir("log_psf_ridge")),
         "log_dom_artifact": str(_latest_model_dir("log_dom_ridge")),
@@ -603,7 +600,6 @@ async def analyze_zipcode(
             "status": "insufficient_data",
             "message": "No styles with sufficient sold listings found for this ZIP code.",
             "recommended_styles": [],
-            "confidence": {"overall": "low", "n_listings": 0, "style_count": 0},
         }
 
     styles: list[StyleAggregate] = [
@@ -651,6 +647,7 @@ async def analyze_zipcode(
     }
 
     if scoring_mode == "heuristic":
+        heuristic_payload.pop("confidence", None)  # confidence rate removed from API response
         return heuristic_payload
 
     if scoring_mode not in {"model", "hybrid"}:
