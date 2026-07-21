@@ -400,11 +400,6 @@ def _build_response(
         "warnings": [],
         "recommended_styles": items[:3],
         "all_styles": items,
-        "confidence": {
-            "overall": "medium",
-            "n_listings": 0,
-            "style_count": len(items),
-        },
         "walk_score_data": walk_score_data,
         "school_profile": school_profile,
         "fred_macro": fred_macro,

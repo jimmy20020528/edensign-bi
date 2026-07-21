@@ -499,7 +499,6 @@ function mapAnalysis(analysis, llm) {
   const kpis = [
     {label:"Median Days on Market", value:rfDom?String(Math.round(rfDom)):medDom?String(Math.round(medDom)):"—", unit:"days", delta:"ZIP avg", trend:"flat"},
     {label:"Median $/sqft", value:rfPsf?`$${Math.round(rfPsf)}`:medPpsf?`$${Math.round(medPpsf)}`:medPrem!=null?`${medPrem>0?"+":""}${medPrem}%`:"—", delta:"ZIP avg", trend:"flat"},
-    {label:"Data Confidence",       value:(analysis.confidence?.overall||"—").toUpperCase(),     delta:`${analysis.confidence?.style_count||0} styles`, trend:"flat"},
   ];
 
   const topEv = styles[0]?.evidence?.top_drivers;
