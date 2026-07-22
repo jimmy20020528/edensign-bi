@@ -101,5 +101,5 @@ async def explain_analysis_with_openai(
     return {
         "raw_text": content,
         "explanation": parsed,
-        "model": "",
+        "model": "model",
     }
