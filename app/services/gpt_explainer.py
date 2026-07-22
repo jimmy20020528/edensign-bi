@@ -99,8 +99,6 @@ async def explain_analysis_with_openai(
     parsed = json.loads(content)
 
     return {
-        "provider": "openai",
-        "model": model,
         "raw_text": content,
         "explanation": parsed,
     }
