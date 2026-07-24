@@ -28,6 +28,8 @@ from pathlib import Path
 from typing import Optional
 
 import httpx
+
+from app.services.public_data_proxy import public_data_proxy
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -60,7 +62,7 @@ def _download_file() -> bool:
     CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
     try:
         logger.info("Downloading Redfin market data from %s ...", url)
-        with httpx.Client(timeout=120.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=120.0, follow_redirects=True, proxy=public_data_proxy()) as client:
             resp = client.get(url)
             resp.raise_for_status()
         CACHE_PATH.write_bytes(resp.content)

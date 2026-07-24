@@ -21,6 +21,8 @@ from typing import Optional
 import httpx
 import pgeocode
 
+from app.services.public_data_proxy import public_data_proxy
+
 logger = logging.getLogger(__name__)
 
 BI_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -73,7 +75,7 @@ def _download_state(state_fips: int) -> Optional[list[dict]]:
     page = 1
 
     try:
-        with httpx.Client(timeout=60.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=60.0, follow_redirects=True, proxy=public_data_proxy()) as client:
             while True:
                 resp = client.get(url, params={"fips": state_fips, "per_page": 2000, "page": page})
                 resp.raise_for_status()

@@ -24,6 +24,8 @@ from typing import Optional
 import httpx
 import pgeocode
 
+from app.services.public_data_proxy import public_data_proxy
+
 logger = logging.getLogger(__name__)
 
 BI_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -92,7 +94,7 @@ def _fetch(
     params["lon"] = lon
 
     try:
-        with httpx.Client(timeout=15.0) as client:
+        with httpx.Client(timeout=15.0, proxy=public_data_proxy()) as client:
             resp = client.get(API_URL, params=params)
             resp.raise_for_status()
         data = resp.json()

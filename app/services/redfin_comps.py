@@ -36,6 +36,8 @@ from typing import Any, Optional
 
 import httpx
 
+from app.services.public_data_proxy import public_data_proxy
+
 from app.services.neighborhood_data import geocode_address
 
 
@@ -100,7 +102,7 @@ def resolve_region_id(zipcode: str) -> Optional[int]:
 
     region_id: Optional[int] = None
     try:
-        with httpx.Client(timeout=20.0, headers=_HEADERS, follow_redirects=True) as client:
+        with httpx.Client(timeout=20.0, headers=_HEADERS, follow_redirects=True, proxy=public_data_proxy()) as client:
             r = client.get(f"https://www.redfin.com/zipcode/{zipcode}")
             if r.status_code == 200:
                 # the page embeds the region id in several `region_id=NNN` query strings
@@ -143,7 +145,7 @@ def _gis_fetch(region_id: int, status: int, extra: Optional[dict] = None) -> str
     if extra:
         params.update(extra)
     try:
-        with httpx.Client(timeout=30.0, headers=_HEADERS, follow_redirects=True) as client:
+        with httpx.Client(timeout=30.0, headers=_HEADERS, follow_redirects=True, proxy=public_data_proxy()) as client:
             r = client.get(_GIS_CSV, params=params)
             if r.status_code != 200 or not r.text.strip():
                 logger.warning("Redfin gis-csv HTTP %s region %s status %s",
