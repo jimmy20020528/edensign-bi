@@ -417,6 +417,19 @@ def _build_response(
 # names a different #1 style than the cards). This guarantees one ranking per ZIP.
 _EST_CACHE: dict[tuple, dict[str, Any]] = {}
 _EST_INFLIGHT: dict[tuple, "asyncio.Task"] = {}
+_WS_REPAIR_INFLIGHT: set[tuple] = set()
+
+
+async def _repair_walk_score(key: tuple, zipcode: str) -> None:
+    """A transient Walk Score failure at build time leaves walk_score_data=None in
+    the (process-lifetime) cache. Patch it in the background — the request that
+    noticed returns the cached result immediately (no added latency)."""
+    try:
+        ws = await asyncio.to_thread(get_walk_scores, zipcode)
+        if ws and key in _EST_CACHE:
+            _EST_CACHE[key]["walk_score_data"] = ws
+    finally:
+        _WS_REPAIR_INFLIGHT.discard(key)
 
 
 async def estimate_market_for_zip(
@@ -427,7 +440,11 @@ async def estimate_market_for_zip(
     """Cached entry point — see _estimate_market_for_zip_impl for the real work."""
     key = (str(zipcode).strip()[:5], objective, scoring_mode)
     if key in _EST_CACHE:
-        return _EST_CACHE[key]
+        cached = _EST_CACHE[key]
+        if cached.get("walk_score_data") is None and key not in _WS_REPAIR_INFLIGHT:
+            _WS_REPAIR_INFLIGHT.add(key)
+            asyncio.ensure_future(_repair_walk_score(key, key[0]))
+        return cached
     if key in _EST_INFLIGHT:
         return await _EST_INFLIGHT[key]
     task = asyncio.ensure_future(_estimate_market_for_zip_impl(zipcode, objective, scoring_mode))

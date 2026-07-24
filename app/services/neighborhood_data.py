@@ -26,13 +26,17 @@ import json
 import logging
 import math
 import os
+import re
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Optional
 
 import httpx
 import pgeocode
 
+from app.services.public_data_proxy import public_data_proxy
 from app.services.walkscore_data import get_walk_scores
 
 logger = logging.getLogger(__name__)
@@ -60,6 +64,9 @@ OVERPASS_MIRRORS: list[str] = [
 ]
 _OVERPASS_TIMEOUT = 10.0        # per-mirror; a healthy mirror answers in 1-6s
 _OVERPASS_TOTAL_BUDGET = 25.0   # stop trying mirrors past this wall-clock (s)
+# The mirror that answered most recently is tried first on the next request, so
+# a sick primary (504s/429s) doesn't cost every request a full timeout.
+_LAST_GOOD_MIRROR: Optional[str] = None
 
 # Overpass amenity buckets: (category, [(osm_key, osm_value), ...]).
 # Order = display priority in the report's Amenities & Lifestyle section.
@@ -89,7 +96,7 @@ def geocode_address(address: Optional[str], zipcode: Optional[str]) -> Optional[
     """Resolve a precise lat/lon + place label. Nominatim first, ZIP centroid fallback."""
     if address:
         try:
-            with httpx.Client(timeout=15.0, headers={"User-Agent": _USER_AGENT}) as client:
+            with httpx.Client(timeout=15.0, headers={"User-Agent": _USER_AGENT}, proxy=public_data_proxy()) as client:
                 r = client.get(
                     "https://nominatim.openstreetmap.org/search",
                     params={"format": "json", "q": address, "limit": 1, "addressdetails": 1},
@@ -108,6 +115,12 @@ def geocode_address(address: Optional[str], zipcode: Optional[str]) -> Optional[
         except Exception as exc:
             logger.warning("Neighborhood: Nominatim geocode failed for %r: %s", address, exc)
 
+    # The wizard sends address only — pull the ZIP out of it so the pgeocode
+    # centroid fallback still works when Nominatim fails or finds nothing.
+    if not zipcode and address:
+        m = re.search(r"\b(\d{5})\b", address)
+        if m:
+            zipcode = m.group(1)
     if zipcode:
         try:
             rec = _nomi.query_postal_code(str(zipcode)[:5])
@@ -139,17 +152,25 @@ def fetch_pois(lat: float, lon: float, radius_m: int = 4000, per_category: int =
             selectors.append(f'way["{k}"="{v}"](around:{radius_m},{lat},{lon});')
     query = f"[out:json][timeout:20];({''.join(selectors)});out center tags 200;"
 
+    global _LAST_GOOD_MIRROR
+    mirrors = OVERPASS_MIRRORS
+    if _LAST_GOOD_MIRROR in mirrors:
+        mirrors = [_LAST_GOOD_MIRROR] + [m for m in mirrors if m != _LAST_GOOD_MIRROR]
+
     elements = None
     deadline = time.monotonic() + _OVERPASS_TOTAL_BUDGET
-    for endpoint in OVERPASS_MIRRORS:
+    # Two passes over the mirror list (same time budget): mirror failures are
+    # transient overload, so a retry ~10-20s later often succeeds.
+    for endpoint in mirrors + mirrors:
         if time.monotonic() > deadline:
             logger.warning("Neighborhood: Overpass time budget exhausted, stopping fallback")
             break
         try:
-            with httpx.Client(timeout=_OVERPASS_TIMEOUT, headers={"User-Agent": _USER_AGENT}) as client:
+            with httpx.Client(timeout=_OVERPASS_TIMEOUT, headers={"User-Agent": _USER_AGENT}, proxy=public_data_proxy()) as client:
                 r = client.post(endpoint, data={"data": query})
                 r.raise_for_status()
                 elements = r.json().get("elements", [])
+            _LAST_GOOD_MIRROR = endpoint
             break  # this mirror answered — stop trying the rest
         except Exception as exc:
             logger.warning("Neighborhood: Overpass mirror %s failed: %s", endpoint, exc)
@@ -213,6 +234,50 @@ def _cache_key(address: Optional[str], zipcode: Optional[str]) -> str:
     return f"zip_{str(zipcode)[:5]}"
 
 
+def _ws_dict(ws: dict) -> dict:
+    return {
+        "walk": ws.get("walk_score"),
+        "transit": ws.get("transit_score"),
+        "bike": ws.get("bike_score"),
+        "description": ws.get("walk_desc"),
+    }
+
+
+_WS_REPAIR_INFLIGHT: set[str] = set()
+
+
+def _repair_walk_score(out: dict, key: str, cache_file: Path) -> None:
+    """A transient Walk Score failure at build time gets cached as walk_score=None
+    for the full cache TTL. Refetch in a background thread and patch both caches —
+    the current request returns the cached data immediately (no added latency)."""
+    if key in _WS_REPAIR_INFLIGHT:
+        return
+    _WS_REPAIR_INFLIGHT.add(key)
+
+    def _job() -> None:
+        try:
+            loc = out.get("location") or {}
+            ws = get_walk_scores(
+                str(out.get("zipcode") or ""),
+                lat=loc.get("lat"),
+                lon=loc.get("lon"),
+                address_string=out.get("address"),
+            )
+            if ws:
+                out["walk_score"] = _ws_dict(ws)
+                _CACHE[key] = out
+                try:
+                    cache_file.write_text(json.dumps(out, separators=(",", ":")))
+                except Exception:
+                    pass
+        except Exception as exc:
+            logger.warning("Neighborhood: walk score repair failed: %s", exc)
+        finally:
+            _WS_REPAIR_INFLIGHT.discard(key)
+
+    threading.Thread(target=_job, daemon=True).start()
+
+
 def analyze_neighborhood(
     address: Optional[str] = None,
     zipcode: Optional[str] = None,
@@ -224,14 +289,18 @@ def analyze_neighborhood(
     Does NOT call the LLM — see generate_narrative_openai for that.
     """
     key = _cache_key(address, zipcode)
-    if key in _CACHE and _CACHE[key].get("amenities"):  # ignore poisoned (empty) cache → refetch
-        return _CACHE[key]
     cache_file = DATA_DIR / f"neighborhood_{key}.json"
+    if key in _CACHE and _CACHE[key].get("amenities"):  # ignore poisoned (empty) cache → refetch
+        if not _CACHE[key].get("walk_score"):
+            _repair_walk_score(_CACHE[key], key, cache_file)
+        return _CACHE[key]
     if cache_file.exists() and (time.time() - cache_file.stat().st_mtime) <= CACHE_MAX_AGE_DAYS * 86400:
         try:
             data = json.loads(cache_file.read_text())
             if data.get("amenities"):  # skip empties from a past Overpass failure
                 _CACHE[key] = data
+                if not data.get("walk_score"):
+                    _repair_walk_score(data, key, cache_file)
                 return data
         except Exception:
             pass
@@ -245,20 +314,20 @@ def analyze_neighborhood(
         "walk_score": None,
     }
     if loc:
-        out["amenities"] = fetch_pois(loc["lat"], loc["lon"], radius_m=radius_m)
-        try:
-            ws = get_walk_scores(
-                zipcode or "", lat=loc["lat"], lon=loc["lon"], address_string=address
+        # Overpass (up to _OVERPASS_TOTAL_BUDGET) and Walk Score (up to 15s) are
+        # independent — run them in parallel so worst case is max(), not sum.
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            pois_fut = ex.submit(fetch_pois, loc["lat"], loc["lon"], radius_m)
+            ws_fut = ex.submit(
+                get_walk_scores, zipcode or "", loc["lat"], loc["lon"], address
             )
-            if ws:
-                out["walk_score"] = {
-                    "walk": ws.get("walk_score"),
-                    "transit": ws.get("transit_score"),
-                    "bike": ws.get("bike_score"),
-                    "description": ws.get("description"),
-                }
-        except Exception as exc:
-            logger.warning("Neighborhood: walk score failed: %s", exc)
+            out["amenities"] = pois_fut.result()
+            try:
+                ws = ws_fut.result()
+                if ws:
+                    out["walk_score"] = _ws_dict(ws)
+            except Exception as exc:
+                logger.warning("Neighborhood: walk score failed: %s", exc)
 
     # Only cache a successful amenities fetch — don't let a transient Overpass failure
     # (empty amenities) get pinned for 30 days; an empty result will simply retry.

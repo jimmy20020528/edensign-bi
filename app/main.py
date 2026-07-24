@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -248,7 +249,9 @@ async def analyze_neighborhood_endpoint(payload: NeighborhoodRequest) -> dict[st
         raise HTTPException(status_code=400, detail="Provide address or 5-digit zipcode.")
 
     try:
-        data = analyze_neighborhood(address=addr, zipcode=zc)
+        # analyze_neighborhood does blocking network I/O (up to ~25s) — run it in
+        # a worker thread so concurrent requests don't serialize on the event loop.
+        data = await asyncio.to_thread(analyze_neighborhood, address=addr, zipcode=zc)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Neighborhood lookup failed: {e}") from e
     if not data.get("location"):
@@ -286,7 +289,9 @@ async def analyze_comps_endpoint(payload: CompsRequest) -> dict[str, Any]:
     if len(zc) < 5:
         raise HTTPException(status_code=400, detail="Provide a 5-digit zipcode.")
     try:
-        cma = analyze_comps(
+        # blocking Redfin I/O — worker thread, same reason as /analyze/neighborhood
+        cma = await asyncio.to_thread(
+            analyze_comps,
             zc, address=(payload.address or "").strip() or None,
             beds=payload.bedrooms, baths=payload.bathrooms,
             sqft=payload.sqft, listing_price=payload.listing_price,
