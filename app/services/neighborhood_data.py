@@ -177,7 +177,10 @@ def fetch_pois(lat: float, lon: float, radius_m: int = 4000, per_category: int =
             continue
     if elements is None:
         logger.warning("Neighborhood: all Overpass mirrors failed")
-        return {}
+        # last resort: hosted OSM-data APIs (Geoapify / LocationIQ) — inert
+        # unless their keys are configured (late import avoids a cycle)
+        from app.services.poi_fallback import fetch_pois_fallback
+        return fetch_pois_fallback(lat, lon, radius_m, per_category)
 
     # map (osm_key, osm_value) -> category for bucketing
     tag_to_cat: dict[tuple[str, str], str] = {}
